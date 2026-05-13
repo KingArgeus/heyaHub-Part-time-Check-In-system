@@ -1625,6 +1625,28 @@ var followUpItems=[];   // [{uid, condoName, docId, icon, title, hint, startDate
 var fuNextId=1;
 var fuSelectedDocIds=[];  // IDs chosen inside the modal
 
+// ── Follow-up persistence helpers ──────────────────────────
+var FU_KEY_PREFIX='heyaHub_fuItems_';
+function fuStorageKey(){
+  return FU_KEY_PREFIX+(currentUser&&currentUser.employeeId?currentUser.employeeId:'_default');
+}
+function saveFuItems(){
+  try{
+    localStorage.setItem(fuStorageKey(),JSON.stringify({items:followUpItems,nextId:fuNextId}));
+  }catch(e){}
+}
+function loadFuItems(){
+  try{
+    var raw=localStorage.getItem(fuStorageKey());
+    if(!raw)return;
+    var saved=JSON.parse(raw);
+    if(saved&&Array.isArray(saved.items)){
+      followUpItems=saved.items;
+      fuNextId=saved.nextId||followUpItems.length+1;
+    }
+  }catch(e){}
+}
+
 function openFollowUpModal(){
   if(!clockedIn){showToast('Clock in before adding follow-up documents','warn');return;}
   var pending=docTasks.filter(function(t){return !t.done;});
@@ -1679,6 +1701,7 @@ function confirmFollowUpSelection(){
     if(exists)return;
     followUpItems.push({uid:fuNextId++,condoName:condoName,docId:docId,icon:task.icon,title:task.title,hint:task.hint,startDate:'',endDate:'',comment:'',done:false});
   });
+  saveFuItems();
   document.getElementById('fu-modal-backdrop').classList.add('hidden');
   fuSelectedDocIds=[];
   renderFollowUpSection();
@@ -1760,6 +1783,9 @@ function renderFollowUpSection(){
 function updateFuField(uid,key,value){
   var item=followUpItems.find(function(f){return f.uid===uid;});
   if(!item)return;
+  // Save after any field update (deferred slightly to batch rapid keystrokes)
+  clearTimeout(updateFuField._t);
+  updateFuField._t=setTimeout(saveFuItems,400);
 
   if(key==='startDate'){
     item.startDate=value;
@@ -1790,6 +1816,7 @@ function markFuDone(uid){
   if(!item.startDate||!item.endDate){showToast('Enter start and end month/year first','warn');return;}
   if(!item.comment.trim()){showToast('A comment is required to complete','warn');return;}
   item.done=true;
+  saveFuItems();
   renderFollowUpSection();
   showToast('Follow-up document marked complete','success');
 }
@@ -2207,6 +2234,8 @@ function doLogin(){
 
 function bootDash(data){
   currentUser={name:data.fullName,employeeId:data.employeeId,workerId:data.workerId};
+  // Restore follow-up items for this worker
+  loadFuItems();
   document.getElementById('login-pg').classList.add('hidden');
   document.getElementById('dash-pg').classList.remove('hidden');
   document.getElementById('db-name').textContent=data.fullName.split(' ')[0];
@@ -2227,6 +2256,7 @@ function doLogout(){
   clockedIn=false;clockedOut=false;clockInTime=null;clockOutTime=null;
   visitType='first_visit';selectedCondos=[];confirmedCondos=[];
   followUpItems=[];fuNextId=1;fuSelectedDocIds=[];
+  // Note: localStorage keeps follow-up items so they persist for next login
   var fuSection=document.getElementById('followup-visit-section');
   if(fuSection)fuSection.classList.add('hidden');
   var fuList=document.getElementById('followup-items-list');
