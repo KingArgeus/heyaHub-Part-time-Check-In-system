@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>heyaHub — Worker Portal</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#C8102E"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="heyaHub Worker"/>
+  <link rel="apple-touch-icon" href="/icon-192.png"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+    :root{
+      --bg:#F2F0EB; --white:#FFFFFF; --text:#1C1C1A; --muted:#888;
+      --border:rgba(0,0,0,0.09); --shadow:0 1px 3px rgba(0,0,0,0.05);
+      --red:#C8102E; --red-dark:#A00020;
+      --green:#16A34A; --amber:#D97706; --blue:#2563EB;
+      --green-bg:#DCFCE7; --green-border:#BBF7D0;
+      --amber-bg:#FEF3C7; --amber-border:#FDE68A;
+      --blue-bg:#EFF6FF;  --blue-border:#BFDBFE;
+      --purple-bg:#F3E8FF; --purple-border:#DDD6FE;
+      --gold:#B7860A; --gold-bg:#FFFBEB; --gold-border:#FDE68A;
+      --r:14px; --font:'DM Sans',system-ui,sans-serif; --mono:'DM Mono',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+    .pg{max-width:780px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+    .hidden{display:none!important;}
+
+    /* Cards */
+    .card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem 1.5rem;margin-bottom:1rem;box-shadow:var(--shadow);}
+
+    /* Fields */
+    .field{margin-bottom:1rem;}
+    .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+    .field input,.field select{width:100%;padding:10px 13px;border:1.5px solid rgba(0,0,0,0.15);border-radius:9px;font-size:14px;font-family:var(--font);background:#FAFAF8;color:var(--text);transition:border-color .18s,box-shadow .18s;}
+    .field input:focus,.field select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.1);background:#fff;}
+    .field input.input-error{border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.08);}
+    .field input.input-ok{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.08);}
+    .field input.autofilled{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);background:#f0f6ff;}
+    .pw-wrap{position:relative;}
+    .pw-wrap input{padding-right:40px;}
+    .pw-eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;padding:4px;}
+    .pw-eye:hover{color:#555;}
+    .err-msg{font-size:12px;color:var(--red);margin-top:5px;display:none;align-items:center;gap:5px;}
+    .err-msg.show{display:flex;}
+
+    /* Password strength */
+    .pw-strength-bar{display:flex;gap:4px;margin-top:7px;}
+    .pw-strength-bar span{flex:1;height:3px;border-radius:99px;background:#E5E5E0;transition:background .25s;}
+    .pw-strength-bar span.weak{background:var(--red);}
+    .pw-strength-bar span.fair{background:#F97316;}
+    .pw-strength-bar span.good{background:#EAB308;}
+    .pw-strength-bar span.strong{background:var(--green);}
+    .pw-strength-label{font-size:11px;font-weight:500;margin-top:4px;height:16px;}
+    .pw-strength-label.weak{color:var(--red);}.pw-strength-label.fair{color:#F97316;}.pw-strength-label.good{color:#EAB308;}.pw-strength-label.strong{color:var(--green);}
+    .pw-rules{margin-top:10px;padding:10px 12px;background:#F7F7F4;border-radius:9px;border:1px solid rgba(0,0,0,.07);}
+    .pw-rules p{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;}
+    .pw-rule{display:flex;align-items:center;gap:7px;font-size:13px;color:#666;padding:2px 0;transition:color .2s;}
+    .pw-rule .rule-icon{width:16px;height:16px;border-radius:50%;background:#E5E5E0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:background .2s;}
+    .pw-rule.met{color:var(--green);}.pw-rule.met .rule-icon{background:var(--green);color:#fff;}
+
+    /* Buttons */
+    .btn-primary{background:var(--red);color:#fff;border:none;border-radius:9px;padding:11px 20px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .18s,transform .1s;display:inline-flex;align-items:center;gap:7px;}
+    .btn-primary:hover{background:var(--red-dark);}.btn-primary:active{transform:scale(.98);}
+    .btn-primary:disabled{background:#D5D5CF;color:#999;cursor:not-allowed;transform:none;}
+    .btn-ghost{background:transparent;border:1.5px solid rgba(0,0,0,.18);border-radius:9px;padding:9px 14px;font-size:13px;font-family:var(--font);color:#555;cursor:pointer;transition:background .15s;}
+    .btn-ghost:hover{background:#F0F0EC;}
+    .btn-sm{padding:5px 11px;font-size:12px;}
+    .btn-success{background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .15s;}
+    .btn-success:hover{background:#15803D;}
+    .btn-danger{background:var(--red);color:#fff;border:none;border-radius:9px;padding:10px 18px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:background .15s;}
+    .btn-danger:hover{background:var(--red-dark);}
+    .done-btn{background:var(--green-bg);color:#15803D;border:1px solid var(--green-border);border-radius:8px;padding:4px 11px;font-size:12px;cursor:pointer;font-family:var(--font);font-weight:500;}
+    .done-btn:hover{background:var(--green-border);}
+    .undo-btn{background:#F5F5F2;color:#888;border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:4px 11px;font-size:12px;cursor:pointer;font-family:var(--font);}
+
+    /* Tab bar */
+    .tab-bar{display:flex;background:#EDEDE8;border-radius:10px;padding:3px;margin-bottom:1.4rem;}
+    .tab-btn{flex:1;padding:8px;background:none;border:none;border-radius:8px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;color:var(--muted);transition:background .15s,color .15s;}
+    .tab-btn.active{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+
+    /* Visit type toggle */
+    .visit-toggle{display:flex;gap:10px;margin-bottom:1rem;}
+    .visit-opt{flex:1;padding:12px 10px;border:2px solid rgba(0,0,0,.1);border-radius:11px;background:#FAFAF8;cursor:pointer;text-align:center;transition:all .2s;font-family:var(--font);}
+    .visit-opt:hover{border-color:var(--red);background:#FFF0F2;}
+    .visit-opt.selected.first{border-color:var(--red);background:#FFF0F2;}
+    .visit-opt.selected.followup{border-color:#7C3AED;background:var(--purple-bg);}
+    .visit-opt .vo-icon{font-size:22px;margin-bottom:4px;}
+    .visit-opt .vo-label{font-size:13px;font-weight:600;color:var(--text);}
+    .visit-opt .vo-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+    /* Follow-up modal */
+    .fu-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:flex-end;justify-content:center;}
+    .fu-modal{background:var(--white);border-radius:18px 18px 0 0;width:100%;max-width:780px;padding:1.5rem 1.5rem 2rem;max-height:80vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.18);}
+    .fu-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;}
+    .fu-doc-row{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1.5px solid rgba(0,0,0,.1);border-radius:11px;cursor:pointer;margin-bottom:8px;transition:border-color .15s,background .15s;user-select:none;}
+    .fu-doc-row:hover{border-color:var(--red);background:#FFF8F8;}
+    .fu-doc-row.fu-sel{border-color:var(--red);background:#FFF0F2;}
+    .fu-chk{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(0,0,0,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .fu-doc-row.fu-sel .fu-chk{background:var(--red);border-color:var(--red);}
+    /* Follow-up visit section */
+    .fu-visit-card{border:1.5px solid var(--amber-border);border-radius:12px;padding:14px;margin-bottom:10px;background:#FFFBEB;}
+    .fu-visit-card.fu-complete{border-color:var(--green-border);background:var(--green-bg);}
+    .fu-visit-condo-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#92400E;margin-bottom:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 9px;background:rgba(217,119,6,.12);border-radius:99px;}
+    /* Follow-up button next to pending heading */
+    .btn-followup{background:var(--amber-bg);color:#92400E;border:1.5px solid var(--amber-border);border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;margin-left:auto;display:none;white-space:nowrap;transition:background .15s;}
+    .btn-followup:hover{background:#FDE68A;}
+    .btn-followup.fu-visible{display:inline-flex;align-items:center;gap:4px;}
+
+    /* Stats row */
+    .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;}
+    @media(max-width:560px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+    .stat-box{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+    .stat-box::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
+    .stat-box.red::after{background:var(--red);}
+    .stat-box.green::after{background:var(--green);}
+    .stat-box.amber::after{background:var(--amber);}
+    .stat-box.purple::after{background:#7C3AED;}
+    .stat-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px;}
+    .stat-val{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+    .stat-val.red{color:var(--red);}.stat-val.green{color:var(--green);}.stat-val.amber{color:var(--amber);}.stat-val.purple{color:#7C3AED;}
+    .stat-sub{font-size:11px;color:var(--muted);margin-top:5px;}
+
+    /* Clock panel */
+    .clock-panel{padding:20px;border-radius:14px;border:2px solid var(--border);background:#FAFAF8;text-align:center;margin-bottom:1rem;}
+    .clock-status{font-size:13px;color:var(--muted);margin-bottom:4px;}
+    .clock-time{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);margin-bottom:16px;min-height:32px;}
+    .clock-time.clocked-in{color:var(--green);}
+    .clock-time.clocked-out{color:var(--red);}
+
+    /* GPS */
+    .gps-row{display:flex;align-items:center;gap:9px;padding:8px 12px;background:#F7F7F4;border:1px solid rgba(0,0,0,.08);border-radius:9px;margin-bottom:.8rem;}
+    .gps-dot{width:8px;height:8px;border-radius:50%;background:#D4A017;flex-shrink:0;}
+    .gps-dot.on{background:var(--green);animation:pulse 2s infinite;}
+    .gps-dot.err{background:var(--red);}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+    .gps-txt{font-size:12px;color:#666;flex:1;}
+
+    /* Camera */
+    .cam-btn{width:100%;padding:15px;display:flex;align-items:center;justify-content:center;gap:10px;background:#F7F7F4;border:1.5px dashed rgba(0,0,0,.2);border-radius:12px;cursor:pointer;font-size:14px;color:#666;font-family:var(--font);margin-bottom:.8rem;transition:border-color .15s,color .15s,background .15s;}
+    .cam-btn:hover{border-color:var(--red);color:var(--red);background:#FFF0F2;}
+    #video-el{width:100%;border-radius:10px;display:none;margin-bottom:8px;}
+    #photo-el{width:100%;border-radius:10px;display:none;margin-bottom:8px;}
+    #canvas-el{display:none;}
+    .proof-badge{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:9px;font-size:13px;color:#15803D;margin-bottom:.8rem;}
+
+    /* Document task columns */
+    .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1rem;margin-bottom:1rem;}
+    @media(max-width:540px){.cols{grid-template-columns:1fr;}}
+    .col-head{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+    .count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:99px;padding:0 5px;font-size:11px;font-weight:600;}
+    .pill-amber{background:var(--amber-bg);color:#92400E;}
+    .pill-green{background:var(--green-bg);color:#15803D;}
+    .doc-task-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);}
+    .doc-extra{
+      margin-top:10px;
+      width:100%;
+    }
+
+    .doc-date-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-bottom:8px;
+    }
+
+    .doc-input{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:10px;
+      background:#fff;
+      font-size:12px;
+      font-family:var(--font);
+    }
+
+    .doc-comment{
+      width:100%;
+      min-height:70px;
+      resize:vertical;
+      padding:10px 12px;
+      border:1px solid rgba(0,0,0,.12);
+      border-radius:10px;
+      font-size:12px;
+      font-family:var(--font);
+    }
+
+    .training-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .training-item{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:12px;
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:12px;
+      background:#FAFAF8;
+    }
+
+    .training-check{
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:#D1FAE5;
+      color:#15803D;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:11px;
+      flex-shrink:0;
+      margin-top:2px;
+    }
+    .doc-task-item:last-child{border-bottom:none;}
+    .task-check{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(0,0,0,.2);cursor:pointer;flex-shrink:0;margin-top:2px;background:#FAFAF8;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;}
+    .task-check.done{background:var(--green);border-color:var(--green);}
+    .task-check svg{width:10px;height:10px;stroke:#fff;fill:none;stroke-width:2.5;}
+    .task-title{font-size:13px;color:var(--text);line-height:1.45;}
+    .task-title.struck{text-decoration:line-through;color:#bbb;}
+    .task-meta{font-size:11px;color:#aaa;margin-top:2px;}
+    .task-right{margin-left:auto;flex-shrink:0;}
+
+    /* Progress bar */
+    .progress-wrap{background:#F0F0EC;border-radius:99px;height:6px;margin:8px 0 4px;overflow:hidden;}
+    .progress-bar{height:100%;background:var(--green);border-radius:99px;transition:width .4s ease;}
+
+    /* Section title */
+    .section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#999;margin-bottom:.8rem;}
+
+    /* Top bar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(0,0,0,.08);}
+    .avatar{width:38px;height:38px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+
+    /* Success box */
+    .success-box{background:var(--green-bg);border:1px solid var(--green-border);border-radius:12px;padding:1.1rem 1.4rem;text-align:center;margin-top:1rem;}
+    .ref-mono{font-family:var(--mono);font-size:16px;font-weight:500;color:#15803D;margin-top:4px;}
+
+    /* Nav pills */
+    .page-nav{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap;}
+    .page-nav-btn{padding:7px 14px;border-radius:99px;border:1.5px solid rgba(0,0,0,.12);background:transparent;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;color:var(--muted);transition:all .15s;}
+    .page-nav-btn:hover{border-color:var(--red);color:var(--red);}
+    .page-nav-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+    .page-nav-btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+
+    /* Toast */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 22px;border-radius:99px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;}
+    .toast.show{transform:translateX(-50%) translateY(0);}
+    .toast.success{background:var(--green);}
+    .toast.warn{background:var(--amber);}
+    .toast.error{background:var(--red);}
+
+    /* Login */
+    #login-pg{min-height:100vh;display:flex;flex-direction:column;justify-content:center;}
+    .login-inner{max-width:400px;margin:0 auto;width:100%;}
+    .login-brand{text-align:center;margin-bottom:2rem;}
+
+    /* Badge */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;}
+    .badge-green{background:var(--green-bg);color:#15803D;}
+    .badge-red{background:#FEE2E2;color:var(--red);}
+    .badge-blue{background:var(--blue-bg);color:var(--blue);}
+    .badge-purple{background:var(--purple-bg);color:#7C3AED;}
+    .badge-gold{background:var(--gold-bg);color:var(--gold);}
+
+    /* Condo selection */
+    .condo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem;}
+    @media(max-width:500px){.condo-grid{grid-template-columns:1fr;}}
+    .condo-card{border:2px solid var(--border);border-radius:12px;padding:14px;background:#FAFAF8;cursor:pointer;transition:all .2s;position:relative;}
+    .condo-card:hover:not(.taken):not(.selected){border-color:var(--red);background:#FFF0F2;}
+    .condo-card.selected{border-color:var(--red);background:#FFF0F2;}
+    .condo-card.taken{opacity:.5;cursor:not-allowed;background:#F5F5F2;}
+    .condo-card.nearest{border-color:rgba(37,99,235,.22);background:var(--blue-bg);}
+    .condo-card.nearest.selected{border-color:var(--red);background:#FFF0F2;}
+    .condo-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+    .condo-district{font-size:11px;color:var(--muted);margin-bottom:6px;}
+    .condo-status{display:flex;align-items:center;justify-content:space-between;}
+    .condo-check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .2s;}
+    .condo-card.selected .condo-check{background:var(--red);border-color:var(--red);}
+    .sel-count-banner{padding:10px 14px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:10px;margin-bottom:1rem;font-size:13px;font-weight:600;color:#92400E;}
+
+    /* Requirement checklist */
+    .req-item{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0;color:#666;}
+    .req-item.met{color:var(--green);}
+    .req-item .req-dot{width:8px;height:8px;border-radius:50%;background:#D1D1CB;flex-shrink:0;}
+    .req-item.met .req-dot{background:var(--green);}
+
+    /* Info / warn alert */
+    .info-alert{padding:10px 14px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:9px;font-size:13px;color:#1e40af;margin-bottom:1rem;display:flex;gap:8px;align-items:flex-start;}
+    .warn-alert{padding:10px 14px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:9px;font-size:13px;color:#92400E;margin-bottom:1rem;display:flex;gap:8px;align-items:flex-start;}
+
+    /* Fee cards */
+    .fee-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1px solid var(--border);border-radius:12px;background:#F5F5F2;color:#9A9A94;margin-bottom:1rem;}
+    .fee-card.approved{background:var(--white);color:var(--text);border-color:var(--green-border);}
+    .fee-amount{font-family:var(--mono);font-size:24px;font-weight:600;}
+    .approval-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+    .approval-pill{font-size:11px;font-weight:600;border-radius:99px;padding:4px 9px;background:#E5E5E0;color:#888;}
+    .approval-pill.ok{background:var(--green-bg);color:#15803D;}
+
+    /* Incentive fee card */
+    .incentive-card{border-radius:14px;border:1.5px solid var(--gold-border);background:linear-gradient(135deg,#FFFDF5 0%,#FFF8E1 100%);padding:16px 18px;margin-bottom:1rem;position:relative;overflow:hidden;}
+    .incentive-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#F59E0B,#FBBF24,#F59E0B);}
+    .incentive-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+    .incentive-title{font-size:14px;font-weight:700;color:var(--gold);}
+    .incentive-total{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--gold);letter-spacing:-.03em;}
+    .incentive-breakdown{display:flex;flex-direction:column;gap:6px;}
+    .incentive-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:rgba(255,255,255,.7);border-radius:8px;border:1px solid rgba(245,158,11,.15);}
+    .incentive-row.earned{border-color:var(--gold-border);background:#FFFBEB;}
+    .incentive-row-label{font-size:12px;color:#92400E;font-weight:500;}
+    .incentive-row-amt{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--gold);}
+    .incentive-row-status{font-size:11px;font-weight:600;padding:2px 7px;border-radius:99px;}
+    .incentive-row-status.earned{background:var(--gold-bg);color:var(--gold);}
+    .incentive-row-status.locked{background:#F3F3EF;color:#aaa;}
+    .incentive-note{font-size:11px;color:#92400E;margin-top:10px;line-height:1.5;padding-top:8px;border-top:1px dashed rgba(245,158,11,.3);}
+
+    /* Nearest condo quick-select cards on dashboard */
+    .nearest-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem;}
+    @media(max-width:680px){.nearest-grid{grid-template-columns:1fr;}}
+    .nearest-select-card{border:2px solid var(--blue-border);border-radius:13px;padding:14px 13px;background:var(--blue-bg);cursor:pointer;transition:all .2s;position:relative;}
+    .nearest-select-card:hover:not(.taken){border-color:var(--red);background:#FFF0F2;transform:translateY(-1px);box-shadow:0 3px 10px rgba(200,16,46,.1);}
+    .nearest-select-card.selected-nearest{border-color:var(--red);background:#FFF0F2;}
+    .nearest-select-card.taken{opacity:.55;cursor:not-allowed;background:#F5F5F2;border-color:var(--border);}
+    .nsc-rank{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#2563EB;margin-bottom:5px;}
+    .nsc-rank.selected-nearest{color:var(--red);}
+    .nsc-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;line-height:1.3;}
+    .nsc-dist{font-size:11px;color:var(--muted);margin-bottom:8px;}
+    .nsc-btn{width:100%;padding:7px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:background .15s;}
+    .nsc-btn:hover{background:#1d4ed8;}
+    .nsc-btn.selected{background:var(--red);}
+    .nsc-btn.taken{background:#D5D5CF;color:#999;cursor:not-allowed;}
+    .nsc-tick{position:absolute;top:9px;right:9px;width:18px;height:18px;border-radius:50%;background:var(--red);display:none;align-items:center;justify-content:center;}
+    .nearest-select-card.selected-nearest .nsc-tick{display:flex;}
+
+    /* Autofill hint */
+    .autofill-hint{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--blue);margin-bottom:.7rem;padding:6px 10px;background:var(--blue-bg);border-radius:7px;border:1px solid var(--blue-border);}
+    .autofill-hint svg{flex-shrink:0;}
+  </style>
+</head>
+<body>
+<div class="pg">
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-pg">
+  <div class="login-inner">
+    <div class="login-brand">
+      <img src="data:image/png;base64,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" alt="heyaHub" style="height:56px;width:auto;display:block;padding:8px 14px;background:#fff;border-radius:10px;"/>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Worker Portal · Condo Attendance</div>
+    </div>
+    <div class="card">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign in</button>
+        <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Sign in -->
+      <div id="form-login">
+        <div class="field">
+          <label>Employee ID</label>
+          <input id="li-id" type="text" placeholder="e.g. WRK-0042" oninput="clearErr('li-id','li-err-id')"/>
+          <div class="err-msg" id="li-err-id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Please enter your employee ID.</div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pw-wrap">
+            <input id="li-pw" type="password" placeholder="••••••••" oninput="clearErr('li-pw','li-err-pw')"/>
+            <button class="pw-eye" onclick="togglePw('li-pw',this)" type="button" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="err-msg" id="li-err-pw"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="li-err-pw-msg">Please enter your password.</span></div>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Sign in →</button>
+        <div style="margin-top:10px;text-align:center;font-size:12px;color:#aaa;">Demo: WRK-0001 / password123</div>
+      </div>
+
+      <!-- Register -->
+      <div id="form-register" class="hidden">
+        <div class="field">
+          <label>Full name</label>
+          <input id="reg-name" type="text" placeholder="e.g. Ahmad bin Razali" oninput="clearErr('reg-name','reg-err-name')"/>
+          <div class="err-msg" id="reg-err-name"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Please enter your full name.</div>
+        </div>
+        <div class="field">
+          <label>Employee ID</label>
+          <input id="reg-id" type="text" placeholder="e.g. WRK-0042" oninput="clearErr('reg-id','reg-err-id')"/>
+          <div class="err-msg" id="reg-err-id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="reg-err-id-msg">Please enter your employee ID.</span></div>
+        </div>
+        <div class="field">
+          <label>Create password</label>
+          <div class="pw-wrap">
+            <input id="reg-pw" type="password" placeholder="Min. 8 characters" oninput="onRegPwInput()"/>
+            <button class="pw-eye" onclick="togglePw('reg-pw',this)" type="button" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="pw-strength-bar"><span id="seg1"></span><span id="seg2"></span><span id="seg3"></span><span id="seg4"></span></div>
+          <div class="pw-strength-label" id="reg-strength-label"></div>
+          <div class="pw-rules">
+            <p>Password must include</p>
+            <div class="pw-rule" id="rule-len"><div class="rule-icon">✓</div>At least 8 characters</div>
+            <div class="pw-rule" id="rule-upper"><div class="rule-icon">✓</div>One uppercase letter (A–Z)</div>
+            <div class="pw-rule" id="rule-lower"><div class="rule-icon">✓</div>One lowercase letter (a–z)</div>
+            <div class="pw-rule" id="rule-num"><div class="rule-icon">✓</div>One number (0–9)</div>
+            <div class="pw-rule" id="rule-special"><div class="rule-icon">✓</div>One special character (!@#$%…)</div>
+          </div>
+          <div class="err-msg" id="reg-err-pw"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Password does not meet all requirements.</div>
+        </div>
+        <div class="field">
+          <label>Confirm password</label>
+          <div class="pw-wrap">
+            <input id="reg-pw2" type="password" placeholder="Re-enter your password" oninput="onConfirmPwInput()"/>
+            <button class="pw-eye" onclick="togglePw('reg-pw2',this)" type="button" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="err-msg" id="reg-err-pw2"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Passwords do not match.</div>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="doRegister()">Create account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dash-pg" class="hidden">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <div class="avatar" id="db-avatar">AB</div>
+      <div>
+        <div style="font-size:15px;font-weight:600;letter-spacing:-.01em;">Welcome, <span id="db-name">—</span></div>
+        <div style="font-size:12px;color:#999;" id="db-date">—</div>
+      </div>
+    </div>
+    <button class="btn-ghost btn-sm" onclick="doLogout()">Sign out</button>
+  </div>
+
+  <div class="page-nav">
+    <button class="page-nav-btn active" id="pnav-dashboard" onclick="showDashPage('dashboard')">Dashboard</button>
+    <button class="page-nav-btn" id="pnav-main" onclick="showDashPage('main')">Visit</button>
+  </div>
+
+  <!-- ══════ DASHBOARD PAGE ══════ -->
+  <div id="dashpage-dashboard">
+
+    <!-- Initialisation fee -->
+    <div class="card">
+      <div class="section-title">Initialisation fee</div>
+      <div class="fee-card" id="init-fee-card">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Initialisation Fee</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">Released after Condo Manager and Hy-CAD approval.</div>
+          <div class="approval-row">
+            <span class="approval-pill" id="fee-cm-pill">Condo Manager pending</span>
+            <span class="approval-pill" id="fee-hycad-pill">Hy-CAD pending</span>
+          </div>
+        </div>
+        <div class="fee-amount">$50</div>
+      </div>
+    </div>
+
+    <!-- ── Incentive fee ── -->
+    <div class="incentive-card" id="incentive-card">
+      <div class="incentive-header">
+        <div>
+          <div class="incentive-title">🏆 Incentive Fee</div>
+          <div style="font-size:12px;color:#92400E;margin-top:2px;">Earn $50 for every condo you fully complete</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#92400E;text-align:right;margin-bottom:2px;">Total earned</div>
+          <div class="incentive-total" id="incentive-total">$0</div>
+        </div>
+      </div>
+      <div class="incentive-breakdown" id="incentive-breakdown">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="incentive-note">
+        💡 Complete <strong>all 8 documents</strong> and clock out to earn $50 per condo visit. Fees are released after manager review.
+      </div>
+    </div>
+
+    <!-- ── Nearest condo quick-select ── -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:16px;font-weight:600;">Nearest condo visits</div>
+        <span class="badge badge-blue" id="nearest-count-badge" style="display:none;"></span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Nearest condos ranked from your GPS. Select up to 3 to book — each slot is exclusive to 1 worker for 24 hours.</div>
+      <div class="info-alert" id="nearest-status">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>Waiting for GPS to rank nearby condos.</div>
+      </div>
+      <!-- 3 nearest cards with direct "Select & Visit" action -->
+      <div class="nearest-grid" id="nearest-condo-grid"></div>
+      <!-- Inline condo selection: shows the next 20 condos beyond the nearest 3 -->
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;">
+          <div style="font-size:13px;font-weight:600;">More condos nearby</div>
+          <span class="badge badge-blue" id="dash-sel-count" style="display:none;"></span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:.7rem;">Up to 20 additional condos. You can book up to <strong>3 total</strong> across nearest and more.</div>
+        <div class="condo-grid" id="dash-more-condo-grid" style="grid-template-columns:repeat(2,1fr);"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:1rem;">
+          <button class="btn-primary"
+                  id="dash-confirm-btn"
+                  onclick="confirmDashSelections()"
+                  disabled>
+            Confirm selections →
+          </button>
+          <button class="undo-btn hidden"
+                  id="dash-undo-btn"
+                  onclick="undoDashSelections()">
+            Undo
+          </button>
+          <span style="font-size:12px;color:var(--muted);" id="dash-confirm-hint">
+            Select condos to confirm
+          </span>
+        </div>
+      </div>
+      <div style="margin-top:.8rem;font-size:12px;color:var(--muted);">Need to manage bookings? <button onclick="showDashPage('condos')" style="background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font);padding:0;text-decoration:underline;">Open full Condo Selection →</button></div>
+    </div>
+
+  </div><!-- /dashpage-dashboard -->
+
+  <!-- ══════ VISIT PAGE ══════ -->
+  <div id="dashpage-main" class="hidden">
+
+    <div class="stats-row">
+      <div class="stat-box red">
+        <div class="stat-label">Docs pending</div>
+        <div class="stat-val red" id="stat-pending">—</div>
+        <div class="stat-sub">Not yet ticked</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-label">Docs completed</div>
+        <div class="stat-val green" id="stat-done">—</div>
+        <div class="stat-sub">This session</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-label">Progress</div>
+        <div class="stat-val purple" id="stat-pct">0%</div>
+        <div class="stat-sub">Towards 60% clock-out</div>
+      </div>
+    </div>
+
+    <!-- Visit type -->
+    <div class="card">
+      <div class="section-title">Visit type</div>
+      <div class="visit-toggle">
+        <div class="visit-opt first selected" id="vopt-first" onclick="selectVisit('first_visit')">
+          <div class="vo-icon">🏠</div>
+          <div class="vo-label">First visit</div>
+          <div class="vo-sub">Initial site inspection</div>
+        </div>
+        <div class="visit-opt followup" id="vopt-follow" onclick="selectVisit('follow_up')">
+          <div class="vo-icon">🔄</div>
+          <div class="vo-label">Follow-up visit</div>
+          <div class="vo-sub">Subsequent check</div>
+        </div>
+      </div>
+
+      <!-- ── Condo manager verification (now inside the Visit card, below visit type) ── -->
+      <div style="border-top:1px solid rgba(0,0,0,.06);margin-top:.6rem;padding-top:1rem;">
+        <div class="section-title" style="margin-bottom:.6rem;">Condo manager details</div>
+        <!-- Autofill hint — shown when details were pre-filled from a condo selection -->
+        <div class="autofill-hint hidden" id="autofill-hint">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Details auto-filled from your selected condo. Fields will lock after clock-out.
+        </div>
+        <div style="font-size:13px;color:#777;margin-bottom:.9rem;line-height:1.6;">Enter or confirm the condo manager's details.</div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Manager name</label>
+            <input id="mgr-name" type="text" placeholder="e.g. Ms Lim Hui Ying"/>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Condominium name</label>
+            <input id="mgr-condo" type="text" placeholder="e.g. Seaview Residences" oninput="clearErr('mgr-condo','err-condo');updateClockInReqs()"/>
+            <div class="err-msg" id="err-condo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Required.</div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Manager email</label>
+            <input id="mgr-email" type="email" placeholder="manager@condo.com.sg" oninput="clearErr('mgr-email','err-email');updateClockInReqs()"/>
+            <div class="err-msg" id="err-email"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Enter a valid email.</div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Manager phone</label>
+            <input id="mgr-phone" type="tel" placeholder="+65 6234 5678" oninput="clearErr('mgr-phone','err-phone');updateClockInReqs()"/>
+            <div class="err-msg" id="err-phone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Required.</div>
+          </div>
+          <!-- Locked notice shown after clock-out -->
+          <div id="mgr-locked-notice" class="hidden" style="margin-top:.7rem;padding:8px 12px;background:#F0FFF4;border:1px solid var(--green-border);border-radius:8px;font-size:12px;color:#15803D;display:flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Manager details are locked after clock-out.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location verification -->
+    <div class="card">
+      <div class="section-title">Location verification</div>
+      <div class="gps-row">
+        <div class="gps-dot" id="gps-dot"></div>
+        <div class="gps-txt" id="gps-txt">Acquiring location…</div>
+      </div>
+      <div id="location-name-row" class="hidden" style="padding:8px 12px;background:#F0FFF4;border:1px solid var(--green-border);border-radius:9px;margin-bottom:.8rem;font-size:13px;color:#15803D;font-weight:500;">
+        📍 <span id="location-name-display">—</span>
+      </div>
+      <div id="cam-area">
+        <button class="cam-btn" onclick="openCamera()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Capture location photo
+        </button>
+      </div>
+      <video id="video-el" autoplay playsinline></video>
+      <canvas id="canvas-el"></canvas>
+      <img id="photo-el" alt="Location proof"/>
+      <div id="cam-live-ctrl" class="hidden" style="display:none;gap:8px;margin-bottom:.8rem;">
+        <button class="btn-ghost btn-sm" onclick="stopCam()">Cancel</button>
+        <button class="btn-primary btn-sm" onclick="snapPhoto()">Take photo</button>
+      </div>
+      <div id="proof-ok" class="proof-badge hidden">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Location photo captured
+        <button class="btn-ghost btn-sm" style="margin-left:auto;" onclick="retakeCam()">Retake</button>
+      </div>
+    </div>
+
+    <!-- Document Tasks -->
+    <div class="cols">
+      <div class="card">
+        <div class="col-head">📄 Pending documents <span class="count-pill pill-amber" id="pending-count">0</span><button class="btn-followup" id="followup-btn" onclick="openFollowUpModal()">🔄 Follow-up +</button></div>
+        <div id="pending-list"></div>
+        <div id="no-pending" class="hidden" style="font-size:13px;color:#bbb;padding:6px 0;">All documents ticked!</div>
+      </div>
+      <div class="card">
+        <div class="col-head">✅ Completed documents <span class="count-pill pill-green" id="done-count">0</span></div>
+        <div id="done-list"></div>
+        <div id="no-done" style="font-size:13px;color:#bbb;padding:6px 0;">None ticked yet.</div>
+        <div id="progress-section" class="hidden" style="margin-top:10px;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Progress to 60% clock-out threshold</div>
+          <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="progress-label">0 / 8 completed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow-up Visit Section (shown once follow-up docs are added) -->
+    <div id="followup-visit-section" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;">
+          <div style="font-size:15px;font-weight:700;">🔄 Follow-up Visit Documents</div>
+          <span class="count-pill pill-amber" id="fu-total-count">0</span>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Documents flagged for a follow-up visit. Fill in start/end period and a comment to mark each one done.</div>
+        <div id="followup-items-list"></div>
+      </div>
+    </div>
+
+    <!-- Follow-up selection modal -->
+    <div class="fu-modal-backdrop hidden" id="fu-modal-backdrop" onclick="closeFuModal(event)">
+      <div class="fu-modal" onclick="event.stopPropagation()">
+        <div class="fu-modal-head">
+          <div style="font-size:16px;font-weight:700;">Select documents for follow-up</div>
+          <button class="btn-ghost btn-sm" onclick="closeFuModal()">✕</button>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Choose pending documents that need to be revisited in the follow-up visit.</div>
+        <div id="fu-doc-list"></div>
+        <div style="display:flex;gap:10px;margin-top:1rem;">
+          <button class="btn-primary" onclick="confirmFollowUpSelection()">Add to Follow-up →</button>
+          <button class="btn-ghost" onclick="closeFuModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Training checklist -->
+    <div class="card">
+      <div class="section-title">Training checklist</div>
+
+      <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;">
+        Complete and review these required documents before starting on-site work.
+      </div>
+
+      <div class="training-list" id="training-list"></div>
+    </div>
+
+    <!-- Clock In/Out Panel -->
+    <div class="card">
+      <div class="section-title">On-site time tracking</div>
+
+      <!-- Requirements checklist -->
+      <div id="clock-req-list" style="margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Requirements to clock in</div>
+        <div class="req-item" id="req-visit"><div class="req-dot"></div>Visit type selected</div>
+        <div class="req-item" id="req-photo"><div class="req-dot"></div>Location photo captured</div>
+        <div class="req-item" id="req-condo"><div class="req-dot"></div>Condominium name entered</div>
+        <div class="req-item" id="req-email"><div class="req-dot"></div>Manager email entered</div>
+        <div class="req-item" id="req-phone"><div class="req-dot"></div>Manager phone entered</div>
+      </div>
+
+      <div class="clock-panel" id="clock-panel">
+        <div class="clock-status" id="clock-status">Not yet clocked in</div>
+        <div class="clock-time" id="clock-time">—</div>
+
+        <!-- CLOCK IN -->
+        <div id="clock-in-section">
+          <button class="btn-success" id="clock-in-btn" onclick="doClockIn()" disabled style="width:100%;justify-content:center;opacity:.5;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Clock In
+          </button>
+        </div>
+
+        <!-- CLOCK OUT -->
+        <div id="clock-out-section" class="hidden">
+          <div id="clock-out-req" style="font-size:12px;color:var(--amber);margin-bottom:10px;display:none;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;text-align:left;">
+            ⚠️ Complete at least 60% of documents to clock out (<span id="needed-count">—</span> more needed)
+          </div>
+          <button class="btn-danger" id="clock-out-btn" onclick="doClockOut()" style="width:100%;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Clock Out
+          </button>
+        </div>
+
+        <!-- DONE -->
+        <div id="clock-done-section" class="hidden">
+          <div class="success-box">
+            <div style="font-size:14px;font-weight:600;color:#15803D;">✅ Session Complete</div>
+            <div style="font-size:12px;color:#16A34A;margin-top:3px;">Clocked in: <span id="ref-in">—</span> · Clocked out: <span id="ref-out">—</span></div>
+            <div class="ref-mono" id="ref-no">—</div>
+            <div style="font-size:12px;color:#16A34A;margin-top:3px;">Manager notified · <span id="ref-time">—</span></div>
+            <!-- Incentive earned on session complete -->
+            <div id="session-incentive" class="hidden" style="margin-top:10px;padding:10px 12px;background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:9px;font-size:13px;color:var(--gold);font-weight:600;">
+              🏆 <span id="session-incentive-text">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dashpage-main -->
+
+</div><!-- /dash-pg -->
+</div><!-- /pg -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+var LOCAL_API = 'http://localhost:3000';
+var RENDER_API = 'https://heyahub-checkin.onrender.com';
+var apiOverride = new URLSearchParams(window.location.search).get('api');
+var isLocalPage = window.location.protocol === 'file:' ||
+  window.location.hostname === '' ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === '::1';
+function cleanApiBase(url){return String(url||'').replace(/\/+$/,'');}
+var API = cleanApiBase(apiOverride||(isLocalPage?LOCAL_API:RENDER_API));
+
+var stream=null,photoData=null,gpsData=null,locationName=null,currentUser=null;
+var currentAttendanceId=null,currentReferenceNo=null,attendanceSavePromise=null;
+var visitType='first_visit';
+var clockedIn=false,clockedOut=false;
+var clockInTime=null,clockOutTime=null;
+
+// ── Document tasks ──────────────────────────────────────────────
+var docTasks=[
+  {id:1,title:'Financial Statements',    icon:'📊',hint:'Latest audited accounts',done:false},
+  {id:2,title:'SP Utility Bills',        icon:'⚡',hint:'Last 3 months',done:false},
+  {id:3,title:'Quotations',              icon:'📝',hint:'Vendor quotations',done:false},
+  {id:4,title:'Signed Contracts',        icon:'✍️',hint:'Executed agreements',done:false},
+  {id:5,title:'Approved AGM Minutes',    icon:'🏛️',hint:'AGM resolutions',done:false},
+  {id:6,title:'Approved MoM',            icon:'📋',hint:'Management meeting minutes',done:false},
+  {id:7,title:'WhatsApp Chat',           icon:'💬',hint:'Screenshot or export',done:false},
+  {id:8,title:'Resident Rules & Info',   icon:'📖',hint:'By-laws and house rules',done:false},
+];
+
+// ── Condo list with manager details for auto-fill ───────────────
+// Add manager info to each condo so it can be auto-filled when selected.
+// In production these details would come from the backend via /api/managers.
+var CONDOS=[
+  {id:1, name:'The Sail @ Marina Bay',      district:'District 1 · Marina Bay',       takenBy:null,expiresAt:null, manager:{name:'Mr David Tan',    email:'david@thesail.com.sg',    phone:'+65 6221 1000'}},
+  {id:2, name:'Icon Village',               district:'District 2 · Tanjong Pagar',    takenBy:null,expiresAt:null, manager:{name:'Ms Sarah Ng',     email:'sarah@iconvillage.com.sg', phone:'+65 6222 2000'}},
+  {id:3, name:'Parc Riviera',               district:'District 5 · West Coast',       takenBy:null,expiresAt:null, manager:{name:'Mr James Lim',    email:'james@parcriviera.sg',     phone:'+65 6516 3000'}},
+  {id:4, name:'One Holland Village',        district:'District 10 · Holland Road',    takenBy:null,expiresAt:null, manager:{name:'Ms Clara Yeo',    email:'clara@oneholland.sg',      phone:'+65 6469 4000'}},
+  {id:5, name:'Leedon Residence',           district:'District 10 · Farrer Road',     takenBy:null,expiresAt:null, manager:{name:'Mr Eric Chan',    email:'eric@leedon.sg',           phone:'+65 6466 5000'}},
+  {id:6, name:'Draycott Eight',             district:'District 10 · Draycott Park',   takenBy:null,expiresAt:null, manager:{name:'Ms Mei Lin',      email:'meilin@draycott8.sg',      phone:'+65 6737 6000'}},
+  {id:7, name:'Riviera Point',              district:'District 11 · Newton',          takenBy:null,expiresAt:null, manager:{name:'Mr Peter Koh',    email:'peter@rivierapoint.sg',    phone:'+65 6734 7000'}},
+  {id:8, name:'Skyline Residences',         district:'District 12 · Balestier',       takenBy:null,expiresAt:null, manager:{name:'Ms Amy Wong',     email:'amy@skylineresidences.sg', phone:'+65 6253 8000'}},
+  {id:9, name:'Gem Residences',             district:'District 12 · Toa Payoh',       takenBy:null,expiresAt:null, manager:{name:'Mr Ben Ong',      email:'ben@gemresidences.sg',     phone:'+65 6354 9000'}},
+  {id:10,name:'Seaview Residences',         district:'District 15 · East Coast',      takenBy:null,expiresAt:null, manager:{name:'Ms Lim Hui Ying', email:'manager@seaview.com',      phone:'+65 6234 5678'}},
+  {id:11,name:'The Ambience',               district:'District 15 · Katong',          takenBy:null,expiresAt:null, manager:{name:'Mr Roy Tan',      email:'roy@theambience.sg',       phone:'+65 6447 1100'}},
+  {id:12,name:'Waterfront Waves',           district:'District 16 · Bedok',           takenBy:null,expiresAt:null, manager:{name:'Ms Nina Chua',    email:'nina@waterfrontwaves.sg',  phone:'+65 6443 1200'}},
+  {id:13,name:'Edelweiss Park',             district:'District 17 · Loyang',          takenBy:null,expiresAt:null, manager:{name:'Mr Louis Goh',    email:'louis@edelweisspark.sg',   phone:'+65 6545 1300'}},
+  {id:14,name:'Tanah Merah MRT Condo',      district:'District 16 · Tanah Merah',     takenBy:null,expiresAt:null, manager:{name:'Ms Peggy Ho',     email:'peggy@tanahmerahcondo.sg', phone:'+65 6445 1400'}},
+  {id:15,name:'The Minton',                 district:'District 19 · Hougang',         takenBy:null,expiresAt:null, manager:{name:'Mr Chris Phua',   email:'chris@theminton.sg',       phone:'+65 6386 1500'}},
+  {id:16,name:'Kingsford Waterbay',         district:'District 19 · Upper Serangoon', takenBy:null,expiresAt:null, manager:{name:'Ms Linda Sim',    email:'linda@kingsfordwaterbay.sg',phone:'+65 6384 1600'}},
+  {id:17,name:'High Park Residences',       district:'District 28 · Seletar',         takenBy:null,expiresAt:null, manager:{name:'Mr Aaron Low',    email:'aaron@highparkresidences.sg',phone:'+65 6760 1700'}},
+  {id:18,name:'Woodhaven',                  district:'District 25 · Woodlands',       takenBy:null,expiresAt:null, manager:{name:'Ms Bel Tay',      email:'bel@woodhaven.sg',         phone:'+65 6368 1800'}},
+  {id:19,name:'Symphony Suites',            district:'District 27 · Yishun',          takenBy:null,expiresAt:null, manager:{name:'Mr Don Lee',      email:'don@symphonysuites.sg',    phone:'+65 6757 1900'}},
+  {id:20,name:'Lakeville',                  district:'District 22 · Jurong',          takenBy:null,expiresAt:null, manager:{name:'Ms Faye Woo',     email:'faye@lakeville.sg',        phone:'+65 6795 2000'}},
+];
+var selectedCondos=[], confirmedCondos=[];
+var CONDO_RES_KEY='heyaHub_condo_reservations_v1';
+var FEE_APPROVAL_KEY='heyaHub_initialisation_fee_approvals_v1';
+var INCENTIVE_KEY='heyaHub_incentive_v1';
+var feeApprovals={condoManager:false,hycad:false};
+// Track completed visits for incentive: [{condoId, condoName, amount, date}]
+var completedVisitsForIncentive=[];
+
+var CONDO_COORDS={
+  1:{lat:1.2807,lng:103.8545},2:{lat:1.2756,lng:103.8446},3:{lat:1.3204,lng:103.7541},4:{lat:1.3119,lng:103.7958},
+  5:{lat:1.3137,lng:103.8034},6:{lat:1.3111,lng:103.8302},7:{lat:1.3140,lng:103.8423},8:{lat:1.3269,lng:103.8522},
+  9:{lat:1.3382,lng:103.8505},10:{lat:1.3005,lng:103.9042},11:{lat:1.3063,lng:103.9021},12:{lat:1.3178,lng:103.9351},
+  13:{lat:1.3554,lng:103.9644},14:{lat:1.3273,lng:103.9464},15:{lat:1.3500,lng:103.8792},16:{lat:1.3742,lng:103.9021},
+  17:{lat:1.3984,lng:103.8759},18:{lat:1.4382,lng:103.7866},19:{lat:1.4370,lng:103.8397},20:{lat:1.3441,lng:103.7251}
+};
+
+function kmBetween(lat1,lng1,lat2,lng2){
+  var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── Incentive helpers ───────────────────────────────────────────
+function loadIncentiveData(){
+  try{
+    var saved=JSON.parse(localStorage.getItem(INCENTIVE_KEY)||'[]')||[];
+    completedVisitsForIncentive=saved;
+  }catch(e){completedVisitsForIncentive=[];}
+}
+function saveIncentiveData(){
+  localStorage.setItem(INCENTIVE_KEY,JSON.stringify(completedVisitsForIncentive));
+}
+function addIncentiveVisit(condoId,condoName){
+  completedVisitsForIncentive.push({
+    condoId:condoId,condoName:condoName,
+    amount:50,date:new Date().toLocaleDateString('en-SG',{dateStyle:'medium'})
+  });
+  saveIncentiveData();
+}
+function getTotalIncentive(){
+  return completedVisitsForIncentive.reduce(function(s,v){return s+v.amount;},0);
+}
+
+function renderIncentiveCard(){
+  loadIncentiveData();
+  var total=getTotalIncentive();
+  document.getElementById('incentive-total').textContent='$'+total;
+
+  var bd=document.getElementById('incentive-breakdown');
+  if(!completedVisitsForIncentive.length){
+    bd.innerHTML='<div class="incentive-row"><span class="incentive-row-label">No visits completed yet</span><span class="incentive-row-status locked">Locked</span></div>';
+    return;
+  }
+  bd.innerHTML=completedVisitsForIncentive.map(function(v){
+    return '<div class="incentive-row earned">'
+      +'<div><div class="incentive-row-label">'+v.condoName+'</div><div style="font-size:10px;color:#B45309;margin-top:2px;">'+v.date+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+        +'<span class="incentive-row-amt">$'+v.amount+'</span>'
+        +'<span class="incentive-row-status earned">Earned</span>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+// ── Fee approvals ──────────────────────────────────────────────
+function loadFeeApprovals(){
+  try{var saved=JSON.parse(localStorage.getItem(FEE_APPROVAL_KEY)||'{}')||{};feeApprovals.condoManager=!!saved.condoManager;feeApprovals.hycad=!!saved.hycad;}
+  catch(e){feeApprovals={condoManager:false,hycad:false};}
+}
+function saveFeeApprovals(){localStorage.setItem(FEE_APPROVAL_KEY,JSON.stringify(feeApprovals));}
+
+function loadCondoReservations(){
+  var now=Date.now();
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(CONDO_RES_KEY)||'{}')||{};}catch(e){saved={};}
+  CONDOS.forEach(function(c){
+    var r=saved[c.id];
+    if(r&&r.takenBy&&r.expiresAt&&now<=r.expiresAt){c.takenBy=r.takenBy;c.expiresAt=r.expiresAt;}
+    else if(c.expiresAt&&now>c.expiresAt){c.takenBy=null;c.expiresAt=null;}
+  });
+  saveCondoReservations();
+}
+function saveCondoReservations(){
+  var now=Date.now();var data={};
+  CONDOS.forEach(function(c){if(c.takenBy&&c.expiresAt&&now<=c.expiresAt)data[c.id]={takenBy:c.takenBy,expiresAt:c.expiresAt};});
+  localStorage.setItem(CONDO_RES_KEY,JSON.stringify(data));
+}
+function isCondoTakenByOther(id){
+  var c=CONDOS.find(function(x){return x.id===id;});
+  return !!(c&&c.takenBy&&currentUser&&c.takenBy!==currentUser.employeeId);
+}
+
+// ── Helpers ─────────────────────────────────────────────────────
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show'+(type?' '+type:'');
+  setTimeout(function(){t.classList.remove('show');},3200);
+}
+function clearErr(inputId,errId){
+  var inp=document.getElementById(inputId);if(inp)inp.classList.remove('input-error');
+  var err=document.getElementById(errId);if(err)err.classList.remove('show');
+}
+function setErr(inputId,errId,msg){
+  var inp=document.getElementById(inputId);if(inp)inp.classList.add('input-error');
+  var err=document.getElementById(errId);
+  if(err){var s=err.querySelector('span');if(s&&msg)s.textContent=msg;err.classList.add('show');}
+}
+function switchTab(tab){
+  var isL=tab==='login';
+  document.getElementById('form-login').classList.toggle('hidden',!isL);
+  document.getElementById('form-register').classList.toggle('hidden',isL);
+  document.getElementById('tab-login').classList.toggle('active',isL);
+  document.getElementById('tab-register').classList.toggle('active',!isL);
+}
+function showDashPage(page){
+  ['dashboard','main'].forEach(function(p){
+    document.getElementById('dashpage-'+p).classList.toggle('hidden',p!==page);
+    document.getElementById('pnav-'+p).classList.toggle('active',p===page);
+  });
+  if(page==='dashboard'){renderDashboard();}
+  if(page==='main'){updateClockInReqs();}
+}
+function fmtTime(d){return d?d.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';}
+
+// ── Auto-fill manager fields from a condo ──────────────────────
+function autofillManagerFromCondo(condoId){
+  var condo=CONDOS.find(function(c){return c.id===condoId;});
+  if(!condo)return;
+
+  // Fill condominium name
+  var condoInput=document.getElementById('mgr-condo');
+  condoInput.value=condo.name;
+  condoInput.classList.add('autofilled');
+
+  // Fill manager details if available
+  if(condo.manager){
+    var nameInput=document.getElementById('mgr-name');
+    var emailInput=document.getElementById('mgr-email');
+    var phoneInput=document.getElementById('mgr-phone');
+    if(condo.manager.name){nameInput.value=condo.manager.name;nameInput.classList.add('autofilled');}
+    if(condo.manager.email){emailInput.value=condo.manager.email;emailInput.classList.add('autofilled');}
+    if(condo.manager.phone){phoneInput.value=condo.manager.phone;phoneInput.classList.add('autofilled');}
+  }
+
+  // Show the autofill hint banner
+  document.getElementById('autofill-hint').classList.remove('hidden');
+
+  // Clear errors since fields are now filled
+  ['mgr-condo','mgr-email','mgr-phone'].forEach(function(id){
+    document.getElementById(id).classList.remove('input-error');
+  });
+  ['err-condo','err-email','err-phone'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.classList.remove('show');
+  });
+
+  updateClockInReqs();
+}
+
+// ── Select condo from dashboard and go directly to Visit page ──
+function selectAndVisitCondo(condoId){
+  loadCondoReservations();
+  if(isCondoTakenByOther(condoId)){showToast('This condo is already taken','warn');renderNearestCondos();return;}
+
+  var condo=CONDOS.find(function(c){return c.id===condoId;});
+  if(!condo)return;
+
+  // If already selected by this user, toggle it off
+  var idx=selectedCondos.indexOf(condoId);
+  if(idx!==-1){
+    selectedCondos.splice(idx,1);
+    condo.takenBy=null;condo.expiresAt=null;
+    confirmedCondos=confirmedCondos.filter(function(n){return n!==condo.name;});
+    saveCondoReservations();
+    renderNearestCondos();renderDashMoreCondos();
+    showToast('Booking cancelled for '+condo.name,'warn');
+    return;
+  }
+
+  if(selectedCondos.length>=3){showToast('Maximum 3 condos allowed','warn');return;}
+
+  var exp=Date.now()+(24*60*60*1000);
+  condo.takenBy=currentUser.employeeId;
+  condo.expiresAt=exp;
+  selectedCondos.push(condoId);
+  confirmedCondos.push(condo.name);
+  saveCondoReservations();
+
+  // Auto-fill manager details from the first confirmed condo
+  if(selectedCondos.length===1)autofillManagerFromCondo(condoId);
+
+  renderNearestCondos();renderDashMoreCondos();
+  
+  showToast('Booked: '+condo.name, 'success');
+  showDashPage('main');
+}
+
+// ── Dashboard render ──────────────────────────────────────────
+function renderDashboard(){
+  loadFeeApprovals();
+  var approved=feeApprovals.condoManager&&feeApprovals.hycad;
+  document.getElementById('init-fee-card').classList.toggle('approved',approved);
+  document.getElementById('fee-cm-pill').className='approval-pill'+(feeApprovals.condoManager?' ok':'');
+  document.getElementById('fee-hycad-pill').className='approval-pill'+(feeApprovals.hycad?' ok':'');
+  document.getElementById('fee-cm-pill').textContent=feeApprovals.condoManager?'Condo Manager approved':'Condo Manager pending';
+  document.getElementById('fee-hycad-pill').textContent=feeApprovals.hycad?'Hy-CAD approved':'Hy-CAD pending';
+  renderIncentiveCard();
+  renderNearestCondos();
+  renderDashMoreCondos();
+  checkNoShows();
+  updateDashSelectionUI();
+}
+
+function getNearestCondos(){
+  if(!gpsData||isNaN(parseFloat(gpsData.lat))||isNaN(parseFloat(gpsData.lng)))return[];
+  var lat=parseFloat(gpsData.lat),lng=parseFloat(gpsData.lng);
+  return CONDOS.map(function(c){
+    var p=CONDO_COORDS[c.id];
+    return Object.assign({},c,{distanceKm:p?kmBetween(lat,lng,p.lat,p.lng):999});
+  }).sort(function(a,b){return a.distanceKm-b.distanceKm;}).slice(0,3);
+}
+
+// Returns condos beyond the nearest 3 (positions 4–23, up to 20 more)
+function getMoreCondos(){
+  if(!gpsData||isNaN(parseFloat(gpsData.lat))||isNaN(parseFloat(gpsData.lng))){
+    // No GPS — return all condos not in nearest 3
+    return CONDOS.slice(3,23);
+  }
+  var lat=parseFloat(gpsData.lat),lng=parseFloat(gpsData.lng);
+  return CONDOS.map(function(c){
+    var p=CONDO_COORDS[c.id];
+    return Object.assign({},c,{distanceKm:p?kmBetween(lat,lng,p.lat,p.lng):999});
+  }).sort(function(a,b){return a.distanceKm-b.distanceKm;}).slice(3,23);
+}
+
+// Render the "20 more condos" grid on the dashboard
+function renderDashMoreCondos(){
+  loadCondoReservations();
+  var grid=document.getElementById('dash-more-condo-grid');
+  if(!grid)return;
+  var more=getMoreCondos();
+  var badge=document.getElementById('dash-sel-count');
+
+  // Update selection count badge
+  var myCount=selectedCondos.length;
+  if(myCount>0){badge.textContent=myCount+'/3 booked';badge.style.display='';}
+  else{badge.style.display='none';}
+
+  if(!more.length){grid.innerHTML='<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">No additional condos available.</div>';return;}
+
+  grid.innerHTML=more.map(function(c){
+    var isTaken=isCondoTakenByOther(c.id);
+    var isMyBooking=selectedCondos.indexOf(c.id)!==-1;
+    var canBook=!isTaken&&selectedCondos.length<3||isMyBooking;
+    var distTxt=c.distanceKm<900?c.distanceKm.toFixed(1)+' km':'';
+
+    return '<div class="condo-card'+(isTaken?' taken':'')+(isMyBooking?' selected':'')+'" '
+      +(isTaken&&!isMyBooking?'style="cursor:not-allowed;"':'onclick="toggleDashCondo('+c.id+')"')+'>'
+      +'<div class="condo-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg></div>'
+      +'<div class="condo-name">'+c.name+'</div>'
+      +'<div class="condo-district">'+c.district+'</div>'
+      +'<div class="condo-status">'
+        +(isTaken&&!isMyBooking?'<span class="badge badge-red">Taken</span>'
+          :isMyBooking?'<span class="badge badge-red">Booked ✓</span>'
+          :(distTxt?'<span class="badge badge-blue">'+distTxt+'</span>':'<span class="badge" style="background:#F0F0EC;color:#888;">Available</span>'))
+        +(c.expiresAt&&isMyBooking?'<span style="font-size:10px;color:var(--amber);">Exp '+new Date(c.expiresAt).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'})+'</span>':'')
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+// Toggle a condo from the dashboard "more condos" grid
+function toggleDashCondo(id){
+  loadCondoReservations();
+
+  if(isCondoTakenByOther(id)){
+    showToast('This condo is already taken by another worker','warn');
+    renderDashMoreCondos();
+    return;
+  }
+
+  var idx=selectedCondos.indexOf(id);
+
+  if(idx!==-1){
+    selectedCondos.splice(idx,1);
+    // If there is still a confirmed first condo, re-autofill from it;
+    // otherwise clear the autofilled fields.
+    if(confirmedCondos.length===0){
+      if(selectedCondos.length>0){
+        autofillManagerFromCondo(selectedCondos[0]);
+      } else {
+        ['mgr-condo','mgr-name','mgr-email','mgr-phone'].forEach(function(fid){
+          var el=document.getElementById(fid);
+          if(el){el.value='';el.classList.remove('autofilled');}
+        });
+        document.getElementById('autofill-hint').classList.add('hidden');
+        updateClockInReqs();
+      }
+    }
+  } else {
+    if(selectedCondos.length>=3){
+      showToast('Maximum 3 condos allowed','warn');
+      return;
+    }
+    selectedCondos.push(id);
+    // Auto-fill from the first selected condo (if not yet confirmed)
+    if(selectedCondos.length===1 && confirmedCondos.length===0){
+      autofillManagerFromCondo(id);
+    }
+  }
+
+  updateDashSelectionUI();
+  renderDashMoreCondos();
+  renderNearestCondos();
+}
+
+function updateDashSelectionUI(){
+  var confirmBtn=document.getElementById('dash-confirm-btn');
+  var undoBtn=document.getElementById('dash-undo-btn');
+  var hint=document.getElementById('dash-confirm-hint');
+
+  if(!confirmBtn)return;
+
+  if(confirmedCondos.length>0){
+    confirmBtn.disabled=true;
+    confirmBtn.textContent='Confirmed ✓';
+
+    undoBtn.classList.remove('hidden');
+
+    hint.textContent='Undo to change bookings';
+    return;
+  }
+
+  confirmBtn.textContent='Confirm selections →';
+  undoBtn.classList.add('hidden');
+
+  confirmBtn.disabled=selectedCondos.length===0;
+
+  hint.textContent=
+    selectedCondos.length===0
+      ? 'Select condos to confirm'
+      : selectedCondos.length+'/3 selected';
+}
+
+function confirmDashSelections(){
+  loadCondoReservations();
+
+  if(selectedCondos.length===0){
+    showToast('Select at least 1 condo','warn');
+    return;
+  }
+
+  confirmedCondos=[];
+
+  var exp=Date.now()+(24*60*60*1000);
+
+  selectedCondos.forEach(function(id){
+    var condo=CONDOS.find(function(c){return c.id===id;});
+
+    if(condo){
+      condo.takenBy=currentUser.employeeId;
+      condo.expiresAt=exp;
+
+      confirmedCondos.push(condo.name);
+    }
+  });
+
+  saveCondoReservations();
+
+  if(selectedCondos.length){
+    autofillManagerFromCondo(selectedCondos[0]);
+  }
+
+  updateDashSelectionUI();
+  renderDashMoreCondos();
+  renderNearestCondos();
+
+  showToast('Bookings confirmed!','success');
+}
+
+function undoDashSelections(){
+  loadCondoReservations();
+
+  selectedCondos.forEach(function(id){
+    var condo=CONDOS.find(function(c){return c.id===id;});
+
+    if(condo && condo.takenBy===currentUser.employeeId){
+      condo.takenBy=null;
+      condo.expiresAt=null;
+    }
+  });
+
+  saveCondoReservations();
+
+  selectedCondos=[];
+  confirmedCondos=[];
+
+  ['mgr-condo','mgr-name','mgr-email','mgr-phone'].forEach(function(id){
+    var el=document.getElementById(id);
+
+    if(el){
+      el.value='';
+      el.classList.remove('autofilled');
+    }
+  });
+
+  document.getElementById('autofill-hint').classList.add('hidden');
+
+  updateDashSelectionUI();
+  renderDashMoreCondos();
+  renderNearestCondos();
+
+  showToast('Selections undone','warn');
+}
+
+// Check for expired bookings (no-shows) and prompt the user to explain
+var noShowComments={};
+function checkNoShows(){
+  var now=Date.now();
+  var noShows=CONDOS.filter(function(c){
+    return c.takenBy===currentUser.employeeId&&c.expiresAt&&now>c.expiresAt&&!noShowComments[c.id];
+  });
+  if(!noShows.length)return;
+
+  var section=document.getElementById('noshow-section');
+  var listEl=document.getElementById('noshow-list');
+  if(!section||!listEl)return;
+
+  section.classList.remove('hidden');
+  document.getElementById('condo-confirm-box').classList.remove('hidden');
+  listEl.innerHTML=noShows.map(function(c){
+    return '<div style="margin-top:.7rem;padding:12px;background:#FFFBEB;border:1px solid var(--amber-border);border-radius:9px;">'
+      +'<div style="font-size:13px;font-weight:600;margin-bottom:6px;">'+c.name+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Booking expired without a visit.</div>'
+      +'<textarea id="noshow-comment-'+c.id+'" placeholder="Please explain why you could not attend…" rows="2" '
+        +'style="width:100%;padding:8px 10px;border:1.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:13px;font-family:var(--font);background:#FAFAF8;resize:none;"></textarea>'
+      +'<button onclick="submitNoShow('+c.id+')" style="margin-top:6px;padding:6px 14px;background:var(--amber);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;">Submit & release slot</button>'
+    +'</div>';
+  }).join('');
+}
+
+function submitNoShow(condoId){
+  var ta=document.getElementById('noshow-comment-'+condoId);
+  var comment=ta?ta.value.trim():'';
+  if(!comment){showToast('Please write a reason before submitting','warn');return;}
+
+  var condo=CONDOS.find(function(c){return c.id===condoId;});
+  if(condo){condo.takenBy=null;condo.expiresAt=null;}
+  noShowComments[condoId]=comment;
+
+  // Remove from selected/confirmed
+  selectedCondos=selectedCondos.filter(function(id){return id!==condoId;});
+  if(condo)confirmedCondos=confirmedCondos.filter(function(n){return n!==condo.name;});
+  saveCondoReservations();
+
+  // Try to send to backend
+  fetch(API+'/api/noshow',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({condoId:condoId,condoName:condo?condo.name:'',workerId:currentUser.workerId,employeeId:currentUser.employeeId,comment:comment})
+  }).catch(function(){});
+
+  showToast('Reason submitted — slot released','success');
+  checkNoShows();renderDashMoreCondos();renderNearestCondos();
+  // Hide the section if no more no-shows
+  var now=Date.now();
+  var remaining=CONDOS.filter(function(c){return c.takenBy===currentUser.employeeId&&c.expiresAt&&now>c.expiresAt&&!noShowComments[c.id];});
+  if(!remaining.length)document.getElementById('noshow-section').classList.add('hidden');
+}
+
+// ── Render nearest condos ──────────────────────────────────────
+// Dashboard (nearest-condo-grid): uses new quick-select card style
+// Condo selection page (nearest-condo-grid-booking): uses the original nearest card style
+function renderNearestCondos(){
+  loadCondoReservations();
+  var nearest=getNearestCondos();
+  var status=document.getElementById('nearest-status');
+  var countBadge=document.getElementById('nearest-count-badge');
+
+  if(status){
+    if(nearest.length){
+      status.querySelector('div').textContent='Nearest condos ranked from your current GPS.';
+      if(countBadge){countBadge.style.display='';countBadge.textContent=nearest.length+' nearby';}
+    } else {
+      status.querySelector('div').textContent='Waiting for GPS to rank nearby condos.';
+      if(countBadge)countBadge.style.display='none';
+    }
+  }
+
+  // ── Dashboard quick-select grid ──
+  var dashGrid=document.getElementById('nearest-condo-grid');
+  if(dashGrid){
+    if(!nearest.length){
+      dashGrid.innerHTML='<div style="font-size:13px;color:var(--muted);grid-column:1/-1;">Enable GPS to see nearest condos.</div>';
+    } else {
+      dashGrid.innerHTML=nearest.map(function(c,i){
+        var isTaken=!!(c.takenBy&&currentUser&&c.takenBy!==currentUser.employeeId);
+        var isMySelection=selectedCondos.indexOf(c.id)!==-1&&confirmedCondos.length>0;
+        var rankLabels=['1st nearest','2nd nearest','3rd nearest'];
+        return '<div class="nearest-select-card'+(isTaken?' taken':'')+(isMySelection?' selected-nearest':'')+'">'
+          +'<div class="nsc-tick"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg></div>'
+          +'<div class="nsc-rank'+(isMySelection?' selected-nearest':'')+'">'+rankLabels[i]+'</div>'
+          +'<div class="nsc-name">'+c.name+'</div>'
+          +'<div class="nsc-dist">'+(isTaken?'Taken by another worker':c.distanceKm.toFixed(1)+' km away · '+c.district)+'</div>'
+          +'<button class="nsc-btn'+(isTaken?' taken':'')+(isMySelection?' selected':'') +'" '
+            +(isTaken?'disabled':'onclick="selectAndVisitCondo('+c.id+')"')+'>'
+            +(isTaken?'Unavailable':isMySelection?'✓ Booked — tap to cancel':(selectedCondos.length>=3?'Max reached':'Book →'))
+          +'</button>'
+        +'</div>';
+      }).join('');
+    }
+  }
+
+  // ── Condo selection page grid (original nearest style) ──
+  var bookingGrid=document.getElementById('nearest-condo-grid-booking');
+  if(bookingGrid){
+    if(!nearest.length){bookingGrid.innerHTML='<div style="font-size:13px;color:var(--muted);">GPS is needed to show nearest condos.</div>';return;}
+    bookingGrid.innerHTML=nearest.map(function(c,i){
+      var isTaken=!!(c.takenBy&&currentUser&&c.takenBy!==currentUser.employeeId);
+      var isSelected=selectedCondos.indexOf(c.id)!==-1;
+      return '<div class="condo-card nearest'+(isTaken?' taken':'')+(isSelected?' selected':'')+'" '+(isTaken?'':'onclick="toggleCondo('+c.id+')"')+'>'
+        +'<div class="condo-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg></div>'
+        +'<div class="condo-name">'+(i+1)+'. '+c.name+'</div>'
+        +'<div class="condo-district">'+c.district+'</div>'
+        +'<div class="condo-status">'
+          +(isTaken?'<span class="badge badge-red">Booked</span>':isSelected?'<span class="badge badge-red">Selected</span>':'<span class="badge badge-blue">'+c.distanceKm.toFixed(1)+' km away</span>')
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+}
+
+// ── Visit type ─────────────────────────────────────────────────
+function selectVisit(type){
+  visitType=type;
+  document.getElementById('vopt-first').className='visit-opt first'+(type==='first_visit'?' selected':'');
+  document.getElementById('vopt-follow').className='visit-opt followup'+(type==='follow_up'?' selected':'');
+  updateClockInReqs();
+}
+
+// ── Clock-in requirements ──────────────────────────────────────
+function updateClockInReqs(){
+  var condo=document.getElementById('mgr-condo').value.trim();
+  var email=document.getElementById('mgr-email').value.trim();
+  var phone=document.getElementById('mgr-phone').value.trim();
+  var reqs={
+    visit:!!visitType,
+    photo:!!photoData,
+    condo:!!condo,
+    email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
+    phone:!!phone
+  };
+  Object.keys(reqs).forEach(function(k){
+    var el=document.getElementById('req-'+k);
+    if(el)el.className='req-item'+(reqs[k]?' met':'');
+  });
+  var allMet=reqs.visit&&reqs.photo&&reqs.condo&&reqs.email&&reqs.phone;
+  var btn=document.getElementById('clock-in-btn');
+  btn.disabled=!allMet;
+  btn.style.opacity=allMet?'1':'0.5';
+}
+
+// ── Document tasks ─────────────────────────────────────────────
+function getDoneCount(){return docTasks.filter(function(t){return t.done;}).length;}
+function getPct(){return Math.round((getDoneCount()/docTasks.length)*100);}
+
+function renderDocTasks(){
+
+  var pending=docTasks.filter(function(t){return !t.done;});
+  var done=docTasks.filter(function(t){return t.done;});
+
+  document.getElementById('pending-count').textContent=pending.length;
+  document.getElementById('done-count').textContent=done.length;
+
+  // Show follow-up button only when clocked in and there are pending docs
+  var fuBtn=document.getElementById('followup-btn');
+  if(fuBtn){
+    if(clockedIn&&!clockedOut&&pending.length>0){
+      fuBtn.classList.add('fu-visible');
+    } else {
+      fuBtn.classList.remove('fu-visible');
+    }
+  }
+
+  document.getElementById('no-pending').classList.toggle('hidden',pending.length!==0);
+  document.getElementById('no-done').classList.toggle('hidden',done.length!==0);
+
+  // ── Pending ──
+  var pl=document.getElementById('pending-list');
+  pl.innerHTML='';
+
+  pending.forEach(function(t){
+
+    if(!t.startDate)t.startDate='';
+    if(!t.endDate)t.endDate='';
+    if(!t.comment)t.comment='';
+
+    var d=document.createElement('div');
+    d.className='doc-task-item';
+
+    d.innerHTML=
+      '<div class="task-check"></div>'+
+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="task-title" style="cursor:pointer;display:flex;align-items:center;gap:6px;" onclick="toggleDocExtra('+t.id+')">'+t.icon+' '+t.title+' <span id="doc-arrow-'+t.id+'" style="font-size:10px;color:var(--muted);margin-left:auto;transition:transform .2s;">▼</span></div>'+
+        '<div class="task-meta" style="cursor:pointer;" onclick="toggleDocExtra('+t.id+')">'+t.hint+'</div>'+
+
+        '<div class="doc-extra" id="doc-extra-'+t.id+'" style="display:none;" onclick="event.stopPropagation()">'+
+
+          '<div class="doc-date-row">'+
+
+            '<div>'+
+              '<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Start month/year</div>'+
+              '<input id="doc-start-'+t.id+'" type="month" class="doc-input" style="padding:6px 8px;font-size:11px;" value="'+t.startDate+'" onchange="updateDocField('+t.id+',\'startDate\',this.value)">'+
+            '</div>'+
+
+            '<div>'+
+              '<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">End month/year</div>'+
+              '<input id="doc-end-'+t.id+'" type="month" class="doc-input" style="padding:6px 8px;font-size:11px;" value="'+t.endDate+'"'+(t.startDate?' min="'+t.startDate+'"':'')+' onchange="updateDocField('+t.id+',\'endDate\',this.value)">'+
+            '</div>'+
+
+          '</div>'+
+
+          '<div>'+
+            '<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Missing information / comments</div>'+
+            '<textarea class="doc-comment" placeholder="Explain what is missing or what needs revision..." onchange="updateDocField('+t.id+',\'comment\',this.value)">'+t.comment+'</textarea>'+
+          '</div>'+
+
+        '</div>'+
+
+      '</div>'+
+
+      '<div class="task-right">'+
+        '<button class="btn-primary btn-sm" onclick="event.stopPropagation();markDocDone('+t.id+')">'+
+          'Tick'+
+        '</button>'+
+      '</div>';
+
+    pl.appendChild(d);
+  });
+
+  // ── Completed ──
+  var dl=document.getElementById('done-list');
+  dl.innerHTML='';
+
+  done.forEach(function(t){
+
+    var d=document.createElement('div');
+    d.className='doc-task-item';
+
+    d.innerHTML=
+      '<div class="task-check done">'+
+        '<svg viewBox="0 0 12 12">'+
+          '<polyline points="10 3 5 9 2 6"/>'+
+        '</svg>'+
+      '</div>'+
+
+      '<div style="flex:1;min-width:0;">'+
+        '<div class="task-title struck">'+t.icon+' '+t.title+'</div>'+
+        '<div class="task-meta">'+t.hint+'</div>'+
+
+        (
+          t.startDate || t.endDate
+            ? '<div style="margin-top:6px;font-size:11px;color:var(--muted);">'+
+                'Period: '+(t.startDate||'—')+' → '+(t.endDate||'—')+
+              '</div>'
+            : ''
+        )+
+
+        (
+          t.comment
+            ? '<div style="margin-top:6px;font-size:12px;color:#666;background:#F7F7F4;padding:8px 10px;border-radius:8px;">'+
+                t.comment+
+              '</div>'
+            : ''
+        )+
+
+      '</div>'+
+
+      '<div class="task-right">'+
+        '<button class="undo-btn" onclick="undoDocDone('+t.id+')">Undo</button>'+
+      '</div>';
+
+    dl.appendChild(d);
+  });
+
+  // ── Progress ──
+  var doneCount=done.length;
+  var pct=Math.round((doneCount/docTasks.length)*100);
+
+  document.getElementById('progress-section').classList.remove('hidden');
+
+  document.getElementById('progress-bar').style.width=pct+'%';
+
+  document.getElementById('progress-label').textContent=
+    doneCount+' / '+docTasks.length+' completed';
+
+  // ── Clock-out requirements ──
+  if(clockedIn&&!clockedOut){
+
+    var needed=Math.ceil(docTasks.length*0.6)-doneCount;
+
+    var canOut=pct>=60;
+
+    document.getElementById('clock-out-req').style.display=
+      canOut?'none':'block';
+
+    if(!canOut){
+      document.getElementById('needed-count').textContent=
+        needed+' more document'+(needed===1?'':'s');
+    }
+
+    document.getElementById('clock-out-btn').disabled=!canOut;
+
+    document.getElementById('clock-out-btn').style.opacity=
+      canOut?'1':'0.5';
+  }
+
+  renderTrainingList();
+}
+
+function markDocDone(id){
+  if(!clockedIn){showToast('Clock in before ticking documents','warn');return;}
+  if(clockedOut){showToast('Session already completed','warn');return;}
+  docTasks.forEach(function(t){if(t.id===id)t.done=true;});renderDocTasks();
+}
+function undoDocDone(id){
+  if(!clockedIn){showToast('Clock in before changing documents','warn');return;}
+  if(clockedOut){showToast('Session already completed','warn');return;}
+  docTasks.forEach(function(t){if(t.id===id)t.done=false;});renderDocTasks();
+}
+
+function updateDocField(id,key,value){
+  docTasks.forEach(function(t){
+    if(t.id===id){
+      if(key==='startDate'){
+        t.startDate=value;
+        var endInput=document.getElementById('doc-end-'+id);
+        if(endInput){
+          endInput.min=value;
+          if(t.endDate&&t.endDate<value){
+            t.endDate='';endInput.value='';
+            showToast('End date cleared — cannot be before start date','warn');
+          }
+        }
+      } else if(key==='endDate'){
+        if(t.startDate&&value&&value<t.startDate){
+          showToast('End date cannot be before start date','warn');
+          var endEl=document.getElementById('doc-end-'+id);
+          if(endEl)endEl.value=t.endDate||'';
+          return;
+        }
+        t.endDate=value;
+      } else {
+        t[key]=value;
+      }
+    }
+  });
+}
+
+function renderTrainingList(){
+
+  var wrap=document.getElementById('training-list');
+
+  if(!wrap)return;
+
+  wrap.innerHTML=docTasks.map(function(t){
+
+    return ''+
+
+      '<div class="training-item">'+
+
+        '<div class="training-check">✓</div>'+
+
+        '<div style="flex:1;">'+
+          '<div style="font-size:14px;font-weight:600;">'+
+            t.icon+' '+t.title+
+          '</div>'+
+
+          '<div style="font-size:12px;color:var(--muted);margin-top:4px;">'+
+            t.hint+
+          '</div>'+
+        '</div>'+
+
+      '</div>';
+
+  }).join('');
+
+}
+
+// ── Follow-up visit feature ────────────────────────────────────
+var followUpItems=[];   // [{uid, condoName, docId, icon, title, hint, startDate, endDate, comment, done}]
+var fuNextId=1;
+var fuSelectedDocIds=[];  // IDs chosen inside the modal
+
+function openFollowUpModal(){
+  if(!clockedIn){showToast('Clock in before adding follow-up documents','warn');return;}
+  var pending=docTasks.filter(function(t){return !t.done;});
+  if(!pending.length){showToast('No pending documents to follow up on','warn');return;}
+
+  fuSelectedDocIds=[];
+  var list=document.getElementById('fu-doc-list');
+  list.innerHTML=pending.map(function(t){
+    var alreadyIn=followUpItems.some(function(f){return f.docId===t.id&&!f.done;});
+    return '<div class="fu-doc-row'+(alreadyIn?' fu-sel':'')+'" id="fu-row-'+t.id+'" onclick="toggleFuDoc('+t.id+')">'
+      +'<div class="fu-chk" id="fu-chk-'+t.id+'">'+(alreadyIn?'<svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg>':'')+'</div>'
+      +'<div><div style="font-size:13px;font-weight:600;">'+t.icon+' '+t.title+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);">'+t.hint+'</div>'
+        +(alreadyIn?'<div style="font-size:10px;color:var(--amber);margin-top:2px;">Already in follow-up</div>':'')
+      +'</div>'
+    +'</div>';
+  }).join('');
+
+  document.getElementById('fu-modal-backdrop').classList.remove('hidden');
+}
+
+function closeFuModal(e){
+  if(e&&e.target!==document.getElementById('fu-modal-backdrop'))return;
+  document.getElementById('fu-modal-backdrop').classList.add('hidden');
+  fuSelectedDocIds=[];
+}
+
+function toggleFuDoc(id){
+  var alreadyIn=followUpItems.some(function(f){return f.docId===id&&!f.done;});
+  if(alreadyIn){showToast('Already in follow-up list','warn');return;}
+  var row=document.getElementById('fu-row-'+id);
+  var chk=document.getElementById('fu-chk-'+id);
+  var idx=fuSelectedDocIds.indexOf(id);
+  if(idx!==-1){
+    fuSelectedDocIds.splice(idx,1);
+    row.classList.remove('fu-sel');
+    chk.innerHTML='';
+  } else {
+    fuSelectedDocIds.push(id);
+    row.classList.add('fu-sel');
+    chk.innerHTML='<svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg>';
+  }
+}
+
+function confirmFollowUpSelection(){
+  if(!fuSelectedDocIds.length){showToast('Select at least 1 document','warn');return;}
+  var condoName=document.getElementById('mgr-condo').value.trim()||'Current condo';
+  fuSelectedDocIds.forEach(function(docId){
+    var task=docTasks.find(function(t){return t.id===docId;});
+    if(!task)return;
+    var exists=followUpItems.some(function(f){return f.docId===docId&&!f.done;});
+    if(exists)return;
+    followUpItems.push({uid:fuNextId++,condoName:condoName,docId:docId,icon:task.icon,title:task.title,hint:task.hint,startDate:'',endDate:'',comment:'',done:false});
+  });
+  document.getElementById('fu-modal-backdrop').classList.add('hidden');
+  fuSelectedDocIds=[];
+  renderFollowUpSection();
+  showToast('Documents added to follow-up','success');
+}
+
+function renderFollowUpSection(){
+  var section=document.getElementById('followup-visit-section');
+  var list=document.getElementById('followup-items-list');
+
+  if(!followUpItems.length){section.classList.add('hidden');return;}
+  section.classList.remove('hidden');
+
+  var pendingCount=followUpItems.filter(function(f){return !f.done;}).length;
+  document.getElementById('fu-total-count').textContent=pendingCount+' pending';
+
+  // Group by condo name
+  var byCondos={};
+  followUpItems.forEach(function(f){
+    if(!byCondos[f.condoName])byCondos[f.condoName]=[];
+    byCondos[f.condoName].push(f);
+  });
+
+  list.innerHTML='';
+  Object.keys(byCondos).forEach(function(condoName){
+    var group=byCondos[condoName];
+    var groupDiv=document.createElement('div');
+    groupDiv.style.marginBottom='1.2rem';
+
+    var labelEl=document.createElement('div');
+    labelEl.innerHTML='<span class="fu-visit-condo-tag">🏢 '+condoName+'</span>';
+    labelEl.style.marginBottom='8px';
+    groupDiv.appendChild(labelEl);
+
+    group.forEach(function(f){
+      var card=document.createElement('div');
+      card.className='fu-visit-card'+(f.done?' fu-complete':'');
+
+      var endMin=f.startDate?' min="'+f.startDate+'"':'';
+      var disAttr=f.done?' disabled':'';
+
+      card.innerHTML=
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+          +'<div style="font-size:14px;font-weight:600;">'+f.icon+' '+f.title+'</div>'
+          +(f.done
+            ?'<span class="badge badge-green">✓ Done</span>'
+            :'<span class="badge" style="background:var(--amber-bg);color:#92400E;">Pending</span>')
+        +'</div>'
+        +'<div style="font-size:12px;color:#92400E;margin-bottom:10px;">'+f.hint+'</div>'
+
+        +'<div class="doc-date-row">'
+          +'<div>'
+            +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Start month/year</div>'
+            +'<input id="fu-start-'+f.uid+'" type="month" class="doc-input" style="padding:6px 8px;font-size:11px;" value="'+f.startDate+'"'+disAttr+' onchange="updateFuField('+f.uid+',\'startDate\',this.value)">'
+          +'</div>'
+          +'<div>'
+            +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">End month/year</div>'
+            +'<input id="fu-end-'+f.uid+'" type="month" class="doc-input" style="padding:6px 8px;font-size:11px;" value="'+f.endDate+'"'+endMin+disAttr+' onchange="updateFuField('+f.uid+',\'endDate\',this.value)">'
+          +'</div>'
+        +'</div>'
+
+        +'<div style="margin-top:8px;">'
+          +'<div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Comment <span style="color:var(--red);">*required to complete</span></div>'
+          +'<textarea class="doc-comment"'+disAttr+' placeholder="Notes, missing items or findings for follow-up…" style="min-height:55px;" onchange="updateFuField('+f.uid+',\'comment\',this.value)">'+f.comment+'</textarea>'
+        +'</div>'
+
+        +(!f.done
+          ?'<div style="margin-top:10px;"><button class="btn-primary btn-sm" onclick="markFuDone('+f.uid+')">Mark complete ✓</button></div>'
+          :'');
+
+      groupDiv.appendChild(card);
+    });
+    list.appendChild(groupDiv);
+  });
+}
+
+function updateFuField(uid,key,value){
+  var item=followUpItems.find(function(f){return f.uid===uid;});
+  if(!item)return;
+
+  if(key==='startDate'){
+    item.startDate=value;
+    var endEl=document.getElementById('fu-end-'+uid);
+    if(endEl){
+      endEl.min=value;
+      if(item.endDate&&item.endDate<value){
+        item.endDate='';endEl.value='';
+        showToast('End date cleared — cannot be before start date','warn');
+      }
+    }
+  } else if(key==='endDate'){
+    if(item.startDate&&value&&value<item.startDate){
+      showToast('End date cannot be before start date','warn');
+      var el2=document.getElementById('fu-end-'+uid);
+      if(el2)el2.value=item.endDate||'';
+      return;
+    }
+    item.endDate=value;
+  } else {
+    item[key]=value;
+  }
+}
+
+function markFuDone(uid){
+  var item=followUpItems.find(function(f){return f.uid===uid;});
+  if(!item)return;
+  if(!item.startDate||!item.endDate){showToast('Enter start and end month/year first','warn');return;}
+  if(!item.comment.trim()){showToast('A comment is required to complete','warn');return;}
+  item.done=true;
+  renderFollowUpSection();
+  showToast('Follow-up document marked complete','success');
+}
+
+// ── GPS ────────────────────────────────────────────────────────
+function getGPS(){
+  var dot=document.getElementById('gps-dot'),txt=document.getElementById('gps-txt');
+  if(!navigator.geolocation){gpsData={lat:'N/A',lng:'N/A'};txt.textContent='GPS not available';dot.className='gps-dot err';return;}
+  txt.textContent='Acquiring GPS…';
+  navigator.geolocation.getCurrentPosition(function(pos){
+    gpsData={lat:pos.coords.latitude.toFixed(5),lng:pos.coords.longitude.toFixed(5)};
+    dot.className='gps-dot on';
+    txt.textContent=gpsData.lat+', '+gpsData.lng+' · GPS confirmed';
+    renderNearestCondos();
+    reverseGeocode(pos.coords.latitude,pos.coords.longitude);
+  },function(){
+    gpsData={lat:'unavailable',lng:'unavailable'};
+    dot.className='gps-dot err';
+    txt.textContent='GPS unavailable — enable location access';
+    renderNearestCondos();
+  },{enableHighAccuracy:true,timeout:10000});
+}
+function reverseGeocode(lat,lng){
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lng+'&zoom=16&addressdetails=1',{headers:{'Accept-Language':'en','User-Agent':'heyaHub-worker-portal'}})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var addr=data.address||{};var parts=[];
+    if(addr.road)parts.push(addr.road);
+    if(addr.suburb||addr.neighbourhood)parts.push(addr.suburb||addr.neighbourhood);
+    if(addr.city||addr.town)parts.push(addr.city||addr.town);
+    locationName=parts.length?parts.join(', '):(data.display_name?data.display_name.split(',')[0]:'Unknown location');
+    document.getElementById('location-name-display').textContent=locationName;
+    document.getElementById('location-name-row').classList.remove('hidden');
+  })
+  .catch(function(){locationName='Location name unavailable';});
+}
+
+// ── Camera ─────────────────────────────────────────────────────
+function openCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){showToast('Camera not available');return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+  .then(function(s){
+    stream=s;var v=document.getElementById('video-el');v.srcObject=s;v.style.display='block';
+    document.getElementById('cam-area').classList.add('hidden');
+    var c=document.getElementById('cam-live-ctrl');c.style.display='flex';c.classList.remove('hidden');
+  }).catch(function(){showToast('Camera access denied');});
+}
+function stopCam(){
+  if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}
+  document.getElementById('video-el').style.display='none';
+  var c=document.getElementById('cam-live-ctrl');c.style.display='none';c.classList.add('hidden');
+  if(!photoData)document.getElementById('cam-area').classList.remove('hidden');
+}
+function snapPhoto(){
+  var v=document.getElementById('video-el'),c=document.getElementById('canvas-el');
+  c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  photoData=c.toDataURL('image/jpeg',.85);
+  stopCam();
+  var p=document.getElementById('photo-el');p.src=photoData;p.style.display='block';
+  document.getElementById('proof-ok').classList.remove('hidden');
+  document.getElementById('cam-area').classList.add('hidden');
+  updateClockInReqs();
+  showToast('Location photo captured','success');
+}
+function retakeCam(){
+  photoData=null;
+  document.getElementById('photo-el').style.display='none';
+  document.getElementById('proof-ok').classList.add('hidden');
+  document.getElementById('cam-area').classList.remove('hidden');
+  updateClockInReqs();
+}
+
+// ── Clock In ───────────────────────────────────────────────────
+function doClockIn(){
+  var email=document.getElementById('mgr-email').value.trim();
+  var phone=document.getElementById('mgr-phone').value.trim();
+  var condo=document.getElementById('mgr-condo').value.trim();
+  var ok=true;
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){setErr('mgr-email','err-email');ok=false;}
+  if(!phone){setErr('mgr-phone','err-phone');ok=false;}
+  if(!condo){setErr('mgr-condo','err-condo');ok=false;}
+  if(!photoData){showToast('Please capture a location photo first','warn');return;}
+  if(!ok)return;
+
+  clockedIn=true;
+  clockInTime=new Date();
+  currentReferenceNo='HH-'+Date.now();
+
+  var record={
+    worker:{name:currentUser.name,employeeId:currentUser.employeeId},
+    checkin:{
+      timestamp:clockInTime.toISOString(),
+      gpsLat:gpsData?gpsData.lat:null,
+      gpsLng:gpsData?gpsData.lng:null,
+      locationName:locationName||'Unknown',
+      photoData:photoData
+    },
+    manager:{name:document.getElementById('mgr-name').value.trim(),condo:condo,email:email,phone:phone},
+    visitType:visitType,
+    tasks:docTasks.map(function(t){return{id:t.id,title:t.title,meta:t.hint,completed:false};})
+  };
+
+  attendanceSavePromise=fetch(API+'/api/attendance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(record)})
+  .then(function(res){if(!res.ok)throw new Error('server');return res.json();})
+  .then(function(data){
+    currentAttendanceId=data.attendanceId||data.id||data.recordId||null;
+    currentReferenceNo=data.referenceNo||currentReferenceNo;
+    if(currentAttendanceId){
+      fetch(API+'/api/attendance/'+currentAttendanceId+'/checkin',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({clockIn:clockInTime.toISOString(),gpsLat:gpsData?gpsData.lat:null,gpsLng:gpsData?gpsData.lng:null,locationName:locationName||'Unknown'})
+      }).catch(function(){});
+    }
+  }).catch(function(){currentAttendanceId=null;});
+
+  document.getElementById('clock-status').textContent='Clocked in at';
+  document.getElementById('clock-time').textContent=fmtTime(clockInTime);
+  document.getElementById('clock-time').className='clock-time clocked-in';
+  document.getElementById('clock-in-section').classList.add('hidden');
+  document.getElementById('clock-out-section').classList.remove('hidden');
+  document.getElementById('clock-req-list').classList.add('hidden');
+  document.getElementById('pnav-condos').disabled=false;
+  renderDocTasks();
+  renderTrainingList();
+  showToast('Clocked in successfully','success');
+}
+
+// ── Clock Out ──────────────────────────────────────────────────
+function doClockOut(){
+  var pct=getPct();
+  if(pct<60){showToast('Complete at least 60% of documents to clock out','warn');return;}
+  if(!currentAttendanceId&&attendanceSavePromise){
+    showToast('Saving clock-in first, please wait','warn');
+    attendanceSavePromise.then(function(){if(currentAttendanceId)doClockOut();});
+    return;
+  }
+  clockedOut=true;
+  clockOutTime=new Date();
+
+  var payload={
+    clockOut:clockOutTime.toISOString(),
+    docProgress:{completed:getDoneCount(),total:docTasks.length,pct:pct},
+    tasks:docTasks.map(function(t){return{id:t.id,title:t.title,meta:t.hint,completed:!!t.done};})
+  };
+
+  if(currentAttendanceId){
+    fetch(API+'/api/attendance/'+currentAttendanceId+'/checkout',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+    }).catch(function(){});
+  }
+
+  // ── Award incentive if all 8 docs are done ──
+  var allDone=getDoneCount()===docTasks.length;
+  var condoName=document.getElementById('mgr-condo').value.trim()||'Unknown Condo';
+  var confirmedCondoId=selectedCondos.length?selectedCondos[0]:null;
+
+  var incentiveMsg='';
+  if(allDone&&confirmedCondoId){
+    addIncentiveVisit(confirmedCondoId,condoName);
+    incentiveMsg='🏆 +$50 incentive earned for completing all tasks at '+condoName+'!';
+  } else if(allDone){
+    incentiveMsg='🏆 +$50 incentive earned for completing all tasks!';
+    addIncentiveVisit(0,condoName);
+  } else {
+    incentiveMsg='Complete all 8 documents next time to earn the $50 incentive.';
+  }
+
+  document.getElementById('ref-in').textContent=fmtTime(clockInTime);
+  document.getElementById('ref-out').textContent=fmtTime(clockOutTime);
+  document.getElementById('ref-no').textContent=currentReferenceNo||'—';
+  document.getElementById('ref-time').textContent=new Date().toLocaleDateString('en-SG',{dateStyle:'medium'});
+
+  // Show incentive result in the done box
+  var incentiveEl=document.getElementById('session-incentive');
+  document.getElementById('session-incentive-text').textContent=incentiveMsg;
+  incentiveEl.classList.remove('hidden');
+
+  document.getElementById('clock-out-section').classList.add('hidden');
+  document.getElementById('clock-done-section').classList.remove('hidden');
+  document.getElementById('clock-status').textContent='Session complete';
+  document.getElementById('clock-time').textContent=fmtTime(clockOutTime);
+  document.getElementById('clock-time').className='clock-time clocked-out';
+
+  // Lock manager fields so they cannot be changed after clock-out
+  ['mgr-name','mgr-condo','mgr-email','mgr-phone'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.setAttribute('readonly','readonly');el.style.background='#F5F5F2';el.style.color='#888';el.style.cursor='not-allowed';}
+  });
+  var lockedNotice=document.getElementById('mgr-locked-notice');
+  if(lockedNotice)lockedNotice.classList.remove('hidden');
+
+  showToast('Clocked out — great work!','success');
+}
+
+// ── Condo Selection page ───────────────────────────────────────
+function renderCondoPage(){
+  var now=Date.now();
+  var selectionLocked=confirmedCondos.length>0;
+  loadCondoReservations();
+  CONDOS.forEach(function(c){if(c.takenBy&&c.expiresAt&&now>c.expiresAt&&c.takenBy===currentUser.employeeId){c.takenBy=null;c.expiresAt=null;}});
+  saveCondoReservations();
+  var grid=document.getElementById('condo-grid');
+  grid.innerHTML='';
+
+  // Show condos beyond the nearest 3 (up to 20 more), or all if no GPS
+  var nearestIds=getNearestCondos().map(function(c){return c.id;});
+  var visibleCondos=nearestIds.length
+    ? CONDOS.filter(function(c){return nearestIds.indexOf(c.id)===-1;}).slice(0,20)
+    : CONDOS.slice(0,20);
+
+  visibleCondos.forEach(function(c){
+    var isTaken=!!(c.takenBy&&c.takenBy!==currentUser.employeeId);
+    var isSelected=selectedCondos.indexOf(c.id)!==-1;
+    var canSelect=!isTaken&&(selectedCondos.length<3||isSelected);
+    var div=document.createElement('div');
+    div.className='condo-card'+(isTaken?' taken':'')+(isSelected?' selected':'');
+    div.onclick=(isTaken&&!isSelected||selectionLocked&&!isSelected)?null:function(){toggleCondo(c.id);};
+    if(!canSelect&&!isSelected)div.style.cursor='not-allowed';
+    div.innerHTML=
+      '<div class="condo-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="10 3 5 9 2 6"/></svg></div>'+
+      '<div class="condo-name">'+c.name+'</div>'+
+      '<div class="condo-district">'+c.district+'</div>'+
+      '<div class="condo-status">'+
+        (isTaken?'<span class="badge badge-red">Taken</span>':isSelected?'<span class="badge badge-red">Selected</span>':'<span class="badge" style="background:#F0F0EC;color:#888;">Available</span>')+
+        (c.expiresAt&&!isTaken?'<span style="font-size:10px;color:var(--amber);">Expires '+new Date(c.expiresAt).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'})+'</span>':'')+
+      '</div>';
+    grid.appendChild(div);
+  });
+  updateCondoUI();
+}
+
+function toggleCondo(id){
+  if(confirmedCondos.length>0){showToast('Press Undo before changing confirmed condos','warn');return;}
+  loadCondoReservations();
+  if(isCondoTakenByOther(id)){showToast('This condo has already been selected by another user','warn');renderCondoPage();return;}
+  var idx=selectedCondos.indexOf(id);
+  if(idx!==-1){
+    selectedCondos.splice(idx,1);
+  } else {
+    if(selectedCondos.length>=3){showToast('Maximum 3 condos allowed','warn');return;}
+    selectedCondos.push(id);
+  }
+  renderNearestCondos();renderCondoPage();
+}
+
+function updateCondoUI(){
+  var count=selectedCondos.length;
+  var btn=document.getElementById('confirm-condos-btn');
+  var undoBtn=document.getElementById('undo-condos-btn');
+  var hint=document.getElementById('condo-btn-hint');
+  var banner=document.getElementById('sel-count-banner');
+  if(confirmedCondos.length>0){
+    btn.disabled=true;btn.textContent='Confirmed ✓';
+    undoBtn.classList.remove('hidden');
+    hint.textContent='Press Undo to change your condo selection';return;
+  }
+  btn.textContent='Confirm selection →';undoBtn.classList.add('hidden');
+  if(count>0){banner.classList.remove('hidden');banner.textContent=count+' condo'+(count>1?'s':'')+' selected (max 3)';}
+  else{banner.classList.add('hidden');}
+  var valid=count>=1&&count<=3;
+  btn.disabled=!valid;
+  hint.textContent=count===0?'Select 1–3 condos to confirm':count+'/3 selected — ready to confirm';
+}
+
+function confirmCondoSelection(){
+  if(confirmedCondos.length>0){showToast('Press Undo before changing confirmed condos','warn');return;}
+  loadCondoReservations();
+  var unavailable=selectedCondos.filter(function(id){return isCondoTakenByOther(id);});
+  if(unavailable.length){selectedCondos=selectedCondos.filter(function(id){return unavailable.indexOf(id)===-1;});showToast('Some selected condos are no longer available','warn');renderCondoPage();return;}
+  if(selectedCondos.length<1||selectedCondos.length>3){showToast('Select 1–3 condos','warn');return;}
+  var exp=Date.now()+(24*60*60*1000);
+  confirmedCondos=[];
+  selectedCondos.forEach(function(id){
+    var c=CONDOS.find(function(x){return x.id===id;});
+    if(c){c.takenBy=currentUser.employeeId;c.expiresAt=exp;confirmedCondos.push(c.name);}
+  });
+
+  // Auto-fill manager details from first confirmed condo
+  if(selectedCondos.length){autofillManagerFromCondo(selectedCondos[0]);}
+
+  saveCondoReservations();
+  document.getElementById('condo-confirm-box').classList.remove('hidden');
+  document.getElementById('condo-confirm-list').innerHTML=confirmedCondos.map(function(n,i){
+    return '<div style="margin-top:4px;">'+('0'+(i+1)).slice(-2)+'. '+n+' <span style="font-size:10px;color:#86EFAC;">· Visit within 24h</span></div>';
+  }).join('');
+  document.getElementById('confirm-condos-btn').disabled=true;
+  document.getElementById('confirm-condos-btn').textContent='Confirmed ✓';
+  renderNearestCondos();renderCondoPage();renderDashMoreCondos();
+  showToast(confirmedCondos.length+' condo'+(confirmedCondos.length>1?'s':'')+' confirmed!','success');
+}
+
+function undoCondoSelection(){
+  loadCondoReservations();
+  selectedCondos.forEach(function(id){
+    var c=CONDOS.find(function(x){return x.id===id;});
+    if(c&&c.takenBy===currentUser.employeeId){c.takenBy=null;c.expiresAt=null;}
+  });
+  saveCondoReservations();
+  confirmedCondos=[];
+  document.getElementById('condo-confirm-box').classList.add('hidden');
+  // Clear autofilled fields
+  ['mgr-condo','mgr-name','mgr-email','mgr-phone'].forEach(function(id){
+    var el=document.getElementById(id);if(el){el.value='';el.classList.remove('autofilled');}
+  });
+  document.getElementById('autofill-hint').classList.add('hidden');
+  renderNearestCondos();renderCondoPage();
+  showToast('Selection unlocked','warn');
+}
+
+// ── Password validation ────────────────────────────────────────
+function checkPwRules(pw){return{len:pw.length>=8,upper:/[A-Z]/.test(pw),lower:/[a-z]/.test(pw),num:/[0-9]/.test(pw),special:/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pw)};}
+function onRegPwInput(){
+  var pw=document.getElementById('reg-pw').value,r=checkPwRules(pw);
+  var score=[r.len,r.upper,r.lower,r.num,r.special].filter(Boolean).length;
+  ['rule-len','rule-upper','rule-lower','rule-num','rule-special'].forEach(function(id,i){
+    var vals=[r.len,r.upper,r.lower,r.num,r.special];
+    document.getElementById(id).className='pw-rule '+(vals[i]?'met':'');
+  });
+  var cls=['','weak','fair','good','strong','strong'];
+  var fill=Math.floor((score/5)*4);
+  for(var i=1;i<=4;i++){var s=document.getElementById('seg'+i);s.className=i<=fill?cls[score]:'';s.style.background='';}
+  var lbl=document.getElementById('reg-strength-label');
+  lbl.textContent=pw.length>0?cls[score]:'';lbl.className='pw-strength-label '+(pw.length>0?cls[score]:'');
+  if(document.getElementById('reg-pw2').value)onConfirmPwInput();
+  document.getElementById('reg-err-pw').classList.remove('show');
+}
+function onConfirmPwInput(){
+  var pw=document.getElementById('reg-pw').value,pw2=document.getElementById('reg-pw2').value;
+  var inp=document.getElementById('reg-pw2'),err=document.getElementById('reg-err-pw2');
+  if(!pw2){inp.className='';err.classList.remove('show');return;}
+  inp.className=pw===pw2?'input-ok':'input-error';
+  err.classList.toggle('show',pw!==pw2);
+}
+function togglePw(id,btn){
+  var inp=document.getElementById(id),hide=inp.type==='password';
+  inp.type=hide?'text':'password';
+  btn.innerHTML=hide
+    ?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+
+// ── Toggle doc extra fields (month/year + comment) ────────────
+function toggleDocExtra(id){
+  var extra=document.getElementById('doc-extra-'+id);
+  var arrow=document.getElementById('doc-arrow-'+id);
+  if(!extra)return;
+  var isOpen=extra.style.display!=='none';
+  extra.style.display=isOpen?'none':'block';
+  if(arrow)arrow.style.transform=isOpen?'':'rotate(180deg)';
+}
+
+// ── Register ───────────────────────────────────────────────────
+function doRegister(){
+  var name=document.getElementById('reg-name').value.trim(),id=document.getElementById('reg-id').value.trim();
+  var pw=document.getElementById('reg-pw').value,pw2=document.getElementById('reg-pw2').value;
+  var ok=true;
+  if(!name){setErr('reg-name','reg-err-name');ok=false;}
+  if(!id){setErr('reg-id','reg-err-id','Please enter your employee ID.');ok=false;}
+  else if(!/^[A-Za-z0-9\-]+$/.test(id)){setErr('reg-id','reg-err-id','Only letters, numbers, hyphens.');ok=false;}
+  var r=checkPwRules(pw);
+  if(!pw||!(r.len&&r.upper&&r.lower&&r.num&&r.special)){setErr('reg-pw','reg-err-pw');ok=false;}
+  if(!pw2||pw!==pw2){setErr('reg-pw2','reg-err-pw2');ok=false;}
+  if(!ok)return;
+  var btn=document.querySelector('#form-register .btn-primary');
+  btn.disabled=true;btn.textContent='Creating account…';
+  fetch(API+'/api/workers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:id,fullName:name,password:pw})})
+  .then(function(res){if(res.status===409)throw new Error('duplicate');if(!res.ok)throw new Error('server');return res.json();})
+  .then(function(){
+    showToast('Account created — please sign in','success');
+    switchTab('login');document.getElementById('li-id').value=id;
+    ['reg-name','reg-id','reg-pw','reg-pw2'].forEach(function(i){document.getElementById(i).value='';});
+    btn.disabled=false;btn.textContent='Create account →';
+  })
+  .catch(function(e){
+    btn.disabled=false;btn.textContent='Create account →';
+    if(e.message==='duplicate')setErr('reg-id','reg-err-id','That employee ID is already registered.');
+    else showToast('Server error — please try again');
+  });
+}
+
+// ── Login ──────────────────────────────────────────────────────
+function doLogin(){
+  var id=document.getElementById('li-id').value.trim(),pw=document.getElementById('li-pw').value;
+  var ok=true;
+  if(!id){setErr('li-id','li-err-id');ok=false;}
+  if(!pw){setErr('li-pw','li-err-pw','Please enter your password.');ok=false;}
+  if(!ok)return;
+  var btn=document.querySelector('#form-login .btn-primary');
+  btn.disabled=true;btn.textContent='Signing in…';
+  fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employeeId:id,password:pw})})
+  .then(function(res){if(res.status===401)throw new Error('credentials');if(!res.ok)throw new Error('server');return res.json();})
+  .then(function(data){bootDash(data);btn.disabled=false;btn.textContent='Sign in →';})
+  .catch(function(e){
+    btn.disabled=false;btn.textContent='Sign in →';
+    if(id==='WRK-0001'&&pw==='password123'){bootDash({fullName:'Ahmad Razali',employeeId:'WRK-0001',workerId:1});return;}
+    if(e.message==='credentials'){
+      document.getElementById('li-err-pw-msg').textContent='Incorrect employee ID or password.';
+      setErr('li-pw','li-err-pw');document.getElementById('li-pw').value='';
+    } else {
+      showToast('Cannot reach server — using demo mode');
+      bootDash({fullName:'Demo Worker',employeeId:id,workerId:0});
+    }
+  });
+}
+
+function bootDash(data){
+  currentUser={name:data.fullName,employeeId:data.employeeId,workerId:data.workerId};
+  document.getElementById('login-pg').classList.add('hidden');
+  document.getElementById('dash-pg').classList.remove('hidden');
+  document.getElementById('db-name').textContent=data.fullName.split(' ')[0];
+  document.getElementById('db-avatar').textContent=data.fullName.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+  document.getElementById('db-date').textContent=new Date().toLocaleDateString('en-SG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  renderDocTasks();
+  renderDashboard();
+  showDashPage('dashboard');
+  updateClockInReqs();
+  getGPS();
+}
+
+// ── Logout ─────────────────────────────────────────────────────
+function doLogout(){
+  document.getElementById('dash-pg').classList.add('hidden');
+  document.getElementById('login-pg').classList.remove('hidden');
+  photoData=null;gpsData=null;locationName=null;currentUser=null;currentAttendanceId=null;currentReferenceNo=null;attendanceSavePromise=null;
+  clockedIn=false;clockedOut=false;clockInTime=null;clockOutTime=null;
+  visitType='first_visit';selectedCondos=[];confirmedCondos=[];
+  followUpItems=[];fuNextId=1;fuSelectedDocIds=[];
+  var fuSection=document.getElementById('followup-visit-section');
+  if(fuSection)fuSection.classList.add('hidden');
+  var fuList=document.getElementById('followup-items-list');
+  if(fuList)fuList.innerHTML='';
+  var fuBtn=document.getElementById('followup-btn');
+  if(fuBtn)fuBtn.classList.remove('fu-visible');
+  docTasks.forEach(function(t){t.done=false;});
+  stopCam();
+  document.getElementById('photo-el').style.display='none';
+  document.getElementById('proof-ok').classList.add('hidden');
+  document.getElementById('cam-area').classList.remove('hidden');
+  document.getElementById('location-name-row').classList.add('hidden');
+  document.getElementById('gps-dot').className='gps-dot';
+  document.getElementById('gps-txt').textContent='Acquiring location…';
+  document.getElementById('clock-status').textContent='Not yet clocked in';
+  document.getElementById('clock-time').textContent='—';
+  document.getElementById('clock-time').className='clock-time';
+  document.getElementById('clock-in-section').classList.remove('hidden');
+  document.getElementById('clock-out-section').classList.add('hidden');
+  document.getElementById('clock-done-section').classList.add('hidden');
+  document.getElementById('clock-req-list').classList.remove('hidden');
+  document.getElementById('pnav-condos').disabled=false;
+  document.getElementById('condo-confirm-box').classList.add('hidden');
+  document.getElementById('undo-condos-btn').classList.add('hidden');
+  document.getElementById('confirm-condos-btn').disabled=true;
+  document.getElementById('confirm-condos-btn').textContent='Confirm selection →';
+  document.getElementById('autofill-hint').classList.add('hidden');
+  var lockedNotice=document.getElementById('mgr-locked-notice');if(lockedNotice)lockedNotice.classList.add('hidden');
+  document.getElementById('session-incentive').classList.add('hidden');
+  ['mgr-name','mgr-condo','mgr-email','mgr-phone'].forEach(function(id){
+    var el=document.getElementById(id);if(el){el.value='';el.classList.remove('autofilled');el.removeAttribute('readonly');el.style.background='';el.style.color='';el.style.cursor='';}
+  });
+  selectVisit('first_visit');
+  renderDashboard();
+  showDashPage('dashboard');
+  ['li-id','li-pw'].forEach(function(i){var el=document.getElementById(i);if(el)el.value='';});
+}
+
+// ── Enter-key support for login / register forms ───────────────
+(function(){
+  // IDs that belong to the sign-in form
+  var loginFields=['li-id','li-pw'];
+  // IDs that belong to the register form
+  var registerFields=['reg-name','reg-id','reg-pw','reg-pw2'];
+
+  function handleKey(e,fields,action){
+    if(e.key!=='Enter')return;
+    // Only fire when one of this form's fields is focused
+    var active=document.activeElement;
+    if(active&&fields.indexOf(active.id)!==-1){
+      e.preventDefault();
+      action();
+    }
+  }
+
+  document.addEventListener('keydown',function(e){
+    handleKey(e,loginFields,doLogin);
+    handleKey(e,registerFields,doRegister);
+  });
+})();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  }
+</script>
+</body>
+</html>
