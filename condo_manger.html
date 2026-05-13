@@ -41,10 +41,7 @@
     .btn-green{background:var(--green);color:#fff;border:none;border-radius:9px;font-family:var(--font);font-weight:700;cursor:pointer;}
     .btn-green:hover{opacity:.85;}
     .btn-sm{padding:5px 12px;font-size:12px;border-radius:7px;}
-    .login-tabs{display:flex;gap:0;margin-bottom:1.6rem;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
-    .login-tab{flex:1;padding:9px;font-size:13px;font-weight:600;font-family:var(--font);border:none;background:none;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;}
-    .login-tab.active{background:var(--accent);color:#fff;}
-    .login-form{display:none;}.login-form.active{display:block;}
+    /* login tabs removed */
 
     /* Dashboard layout */
     #dash-pg{display:flex;min-height:100vh;}
@@ -272,13 +269,8 @@
       <div style="font-size:13px;color:var(--muted);margin-top:4px;">Manager Portal</div>
     </div>
 
-    <div class="login-tabs">
-      <button class="login-tab active" onclick="switchLoginTab('signin')">Sign in</button>
-      <button class="login-tab" onclick="switchLoginTab('register')">Register</button>
-    </div>
-
-    <!-- Sign-in form -->
-    <div class="login-form active" id="form-signin">
+    <!-- Sign-in form (default view) -->
+    <div id="form-signin">
       <div class="field">
         <label>Email address</label>
         <input id="mg-email" type="email" placeholder="manager@condo.com.sg" oninput="this.classList.remove('err')"/>
@@ -292,10 +284,18 @@
       <button class="btn btn-accent" style="width:100%;" onclick="doManagerLogin()">Sign in →</button>
       <div class="err-msg" id="mg-err-creds" style="margin-top:10px;text-align:center;"></div>
       <div style="margin-top:1rem;text-align:center;font-size:12px;color:var(--muted);">Demo: manager@seaview.com / manager123</div>
+      <!-- Register link -->
+      <div style="margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border);text-align:center;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:.6rem;">First time using the Manager Portal?</div>
+        <button class="btn btn-ghost" style="width:100%;" onclick="showManagerRegister()">Create a manager account →</button>
+      </div>
     </div>
 
-    <!-- Register form -->
-    <div class="login-form" id="form-register">
+    <!-- Register form (shown on demand) -->
+    <div id="form-register" style="display:none;">
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:1.2rem;" onclick="showManagerSignin()">← Back to sign in</button>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Create manager account</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:1.4rem;">Fill in your details to get started.</div>
       <div class="field">
         <label>Full name</label>
         <input id="reg-name" type="text" placeholder="Ms Lim Hui Ying" oninput="this.classList.remove('err')"/>
@@ -308,24 +308,21 @@
       </div>
       <div class="field">
         <label>Password</label>
-        <input id="reg-pw" type="password" placeholder="Min. 8 characters" oninput="this.classList.remove('err')"/>
+        <div style="position:relative;">
+          <input id="reg-pw" type="password" placeholder="Min. 8 characters" oninput="this.classList.remove('err')" style="padding-right:40px;"/>
+          <button type="button" onclick="var i=document.getElementById('reg-pw');i.type=i.type==='password'?'text':'password';" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;">👁</button>
+        </div>
         <div class="err-msg" id="reg-err-pw">Password must be at least 8 characters.</div>
       </div>
       <div class="field">
-        <label>Condominium name</label>
-        <input id="reg-condo" type="text" placeholder="e.g. Seaview Residences" oninput="this.classList.remove('err')"/>
-        <div class="err-msg" id="reg-err-condo">Please enter your condominium.</div>
+        <label>Re-enter password</label>
+        <div style="position:relative;">
+          <input id="reg-pw2" type="password" placeholder="Repeat password" oninput="this.classList.remove('err')" style="padding-right:40px;"/>
+          <button type="button" onclick="var i=document.getElementById('reg-pw2');i.type=i.type==='password'?'text':'password';" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#aaa;font-size:13px;">👁</button>
+        </div>
+        <div class="err-msg" id="reg-err-pw2">Passwords do not match.</div>
       </div>
-      <div class="field" style="margin-bottom:1.4rem;">
-        <label>Role</label>
-        <select id="reg-role" class="field-input">
-          <option value="Property Manager">Property Manager</option>
-          <option value="Building Manager">Building Manager</option>
-          <option value="Condo Admin">Condo Admin</option>
-          <option value="Site Supervisor">Site Supervisor</option>
-        </select>
-      </div>
-      <button class="btn btn-accent" style="width:100%;" onclick="doManagerRegister()">Create account →</button>
+      <button class="btn btn-accent" style="width:100%;margin-top:.4rem;" onclick="doManagerRegister()">Create account →</button>
       <div class="err-msg" id="reg-err-server" style="margin-top:10px;text-align:center;"></div>
     </div>
   </div>
@@ -506,9 +503,21 @@ function updateBadge(n){
 
 // ── Login tab switch ──
 function switchLoginTab(tab){
-  document.querySelectorAll('.login-tab').forEach(function(t,i){t.classList.toggle('active',i===(tab==='signin'?0:1));});
-  document.getElementById('form-signin').classList.toggle('active',tab==='signin');
-  document.getElementById('form-register').classList.toggle('active',tab==='register');
+  // Legacy shim — kept for any callers
+  if(tab==='register') showManagerRegister(); else showManagerSignin();
+}
+function showManagerRegister(){
+  document.getElementById('form-signin').style.display='none';
+  document.getElementById('form-register').style.display='block';
+}
+function showManagerSignin(){
+  document.getElementById('form-register').style.display='none';
+  document.getElementById('form-signin').style.display='block';
+  // Reset register errors
+  ['reg-name','reg-email','reg-pw','reg-pw2'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.classList.remove('err');
+  });
+  var se=document.getElementById('reg-err-server');if(se){se.textContent='';se.classList.remove('show');}
 }
 
 // ── Sign in ──
@@ -549,29 +558,26 @@ function doManagerRegister(){
   var name=document.getElementById('reg-name').value.trim();
   var email=document.getElementById('reg-email').value.trim();
   var pw=document.getElementById('reg-pw').value;
-  var condo=document.getElementById('reg-condo').value.trim();
-  var role=document.getElementById('reg-role').value;
+  var pw2=document.getElementById('reg-pw2').value;
   var ok=true;
   if(!name){document.getElementById('reg-name').classList.add('err');document.getElementById('reg-err-name').classList.add('show');ok=false;}
   if(!email||!email.includes('@')){document.getElementById('reg-email').classList.add('err');document.getElementById('reg-err-email').classList.add('show');ok=false;}
   if(pw.length<8){document.getElementById('reg-pw').classList.add('err');document.getElementById('reg-err-pw').classList.add('show');ok=false;}
-  if(!condo){document.getElementById('reg-condo').classList.add('err');document.getElementById('reg-err-condo').classList.add('show');ok=false;}
+  if(pw2!==pw){document.getElementById('reg-pw2').classList.add('err');document.getElementById('reg-err-pw2').classList.add('show');ok=false;}
   if(!ok)return;
-  var btn=document.querySelector('#form-register .btn');
-  btn.disabled=true;btn.textContent='Creating account…';
-  apiFetch('/api/manager/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({managerName:name,email:email,password:pw,condoName:condo,role:role})},4000)
-  .then(function(r){if(r.status===409)throw new Error('exists');if(!r.ok)throw new Error('server');return r.json();})
+  fetch(API+'/api/manager/register',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,email:email,password:pw,role:'Manager',condo:''})
+  })
+  .then(function(r){if(!r.ok)return r.json().then(function(d){throw new Error(d.message||'Registration failed');});return r.json();})
   .then(function(){
-    btn.disabled=false;btn.textContent='Create account →';
     showToast('Account created! Please sign in.','green');
-    switchLoginTab('signin');
-    document.getElementById('mg-email').value=email;
+    showManagerSignin();
   })
   .catch(function(e){
-    btn.disabled=false;btn.textContent='Create account →';
     var el=document.getElementById('reg-err-server');
-    if(e.message==='exists'){el.textContent='An account with this email already exists.';el.classList.add('show');}
-    else{el.textContent='Could not reach server. Please try again.';el.classList.add('show');}
+    el.textContent=e.message||'Registration failed. Try again.';
+    el.classList.add('show');
   });
 }
 
